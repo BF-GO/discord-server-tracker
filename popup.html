@@ -13,9 +13,26 @@
 		<div class="popup-container">
 			<header>
 				<h1>Discord Server Tracker</h1>
-				<button id="reset-button" title="Сбросить все счетчики">
-					<span class="reset-icon"></span> Сбросить
-				</button>
+				<div class="header-buttons">
+					<button
+						id="export-button"
+						class="icon-button"
+						title="Экспортировать данные"
+					>
+						<img
+							src="icons/export-icon.png"
+							alt="Экспорт"
+							class="button-icon"
+						/>
+					</button>
+					<button
+						id="import-button"
+						class="icon-button"
+						title="Импортировать данные"
+					>
+						<img src="icons/import-icon.png" alt="Импорт" class="button-icon" />
+					</button>
+				</div>
 			</header>
 			<main>
 				<h2>Список серверов:</h2>
@@ -39,7 +56,24 @@
 					</button>
 				</div>
 			</main>
+			<footer>
+				<button
+					id="reset-button"
+					class="reset-button"
+					title="Сбросить все счетчики"
+				>
+					<span class="reset-icon"></span> Сбросить
+				</button>
+			</footer>
+			<input
+				type="file"
+				id="import-file-input"
+				accept=".json"
+				style="display: none"
+			/>
 		</div>
 		<script src="popup.js"></script>
 	</body>
 </html>
+
+<!-- <a target="_blank" href="https://icons8.com/icon/42862/upload">Upload</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a> -->

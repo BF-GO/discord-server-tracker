@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
 	const prevPageButton = document.getElementById('prev-page');
 	const nextPageButton = document.getElementById('next-page');
 	const pageInfo = document.getElementById('page-info');
+	const exportButton = document.getElementById('export-button');
+	const importButton = document.getElementById('import-button');
+	const importFileInput = document.getElementById('import-file-input');
 
 	const SERVERS_PER_PAGE = 10;
 	let servers = [];
@@ -116,9 +119,20 @@ document.addEventListener('DOMContentLoaded', () => {
 					updateLastVisited(server.id);
 				});
 
+				// Создаем кнопку удаления
+				const deleteButton = document.createElement('button');
+				deleteButton.className = 'delete-button';
+				deleteButton.title = 'Удалить сервер';
+				deleteButton.innerHTML = '&times;'; // символ крестика
+				deleteButton.addEventListener('click', (e) => {
+					e.stopPropagation(); // Предотвращаем всплытие события
+					deleteServer(server.id);
+				});
+
 				listItem.appendChild(nameSpan);
 				listItem.appendChild(countSpan);
 				listItem.appendChild(linkElement);
+				listItem.appendChild(deleteButton); // Добавляем кнопку удаления
 
 				serverList.appendChild(listItem);
 			}
@@ -173,6 +187,111 @@ document.addEventListener('DOMContentLoaded', () => {
 			console.error('Ошибка при обновлении lastVisited:', error);
 		}
 	}
+
+	async function deleteServer(serverId) {
+		if (confirm('Вы уверены, что хотите удалить этот сервер из списка?')) {
+			try {
+				// Удаляем сервер из хранилища
+				const success = await sendMessage({
+					action: 'removeStorage',
+					keys: [serverId],
+				});
+
+				if (success) {
+					// Обновляем список серверов
+					servers = servers.filter((server) => server.id !== serverId);
+					filteredServers = filteredServers.filter(
+						(server) => server.id !== serverId
+					);
+					calculateTotalPages();
+					if (currentPage > totalPages) {
+						currentPage = totalPages;
+					}
+					renderServerList(searchInput.value.trim().toLowerCase());
+
+					// Отправляем сообщение об изменении хранилища для обновления контента
+					chrome.runtime.sendMessage({ action: 'storageChanged' });
+
+					console.log(`Сервер с ID ${serverId} был удален.`);
+				}
+			} catch (error) {
+				console.error('Ошибка при удалении сервера:', error);
+			}
+		}
+	}
+
+	// Функции для экспорта и импорта данных
+
+	async function exportData() {
+		try {
+			const data = await sendMessage({ action: 'getAllStorage' });
+			const dataStr = JSON.stringify(data, null, 2);
+			const blob = new Blob([dataStr], { type: 'application/json' });
+			const url = URL.createObjectURL(blob);
+
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `discord_servers_backup_${new Date()
+				.toISOString()
+				.slice(0, 10)}.json`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+
+			console.log('Данные успешно экспортированы.');
+		} catch (error) {
+			console.error('Ошибка при экспорте данных:', error);
+			alert('Не удалось экспортировать данные.');
+		}
+	}
+
+	function importData(event) {
+		const file = event.target.files[0];
+		if (!file) {
+			return;
+		}
+
+		const reader = new FileReader();
+		reader.onload = async (e) => {
+			try {
+				const content = e.target.result;
+				const data = JSON.parse(content);
+
+				// Валидация структуры данных
+				if (typeof data !== 'object' || data === null) {
+					throw new Error('Неверный формат файла.');
+				}
+
+				await sendMessage({
+					action: 'setStorage',
+					data: data,
+				});
+
+				alert('Данные успешно импортированы.');
+				loadServers();
+
+				// Отправляем сообщение об изменении хранилища для обновления контента
+				chrome.runtime.sendMessage({ action: 'storageChanged' });
+			} catch (error) {
+				console.error('Ошибка при импорте данных:', error);
+				alert(
+					'Не удалось импортировать данные. Убедитесь, что файл имеет правильный формат.'
+				);
+			}
+		};
+		reader.readAsText(file);
+	}
+
+	// Обработчики событий для кнопок экспорта и импорта
+
+	exportButton.addEventListener('click', exportData);
+
+	importButton.addEventListener('click', () => {
+		importFileInput.click();
+	});
+
+	importFileInput.addEventListener('change', importData);
 
 	searchInput.addEventListener('input', (e) => {
 		const filter = e.target.value.trim().toLowerCase();

@@ -101,6 +101,9 @@
 							`Server ID: ${serverId}, Count: ${count}, Name: ${name}, Link: ${link}`
 						);
 						updateButton(joinButton, count);
+					} else {
+						// Если сервер удален из хранилища, убрать подсветку
+						updateButton(joinButton, 0);
 					}
 				} catch (error) {
 					console.error(
@@ -252,5 +255,13 @@
 	window.addEventListener('unload', () => {
 		isActive = false;
 		console.log('Discord Server Tracker: Content script unloaded.');
+	});
+
+	// Добавляем слушатель для сообщений из popup.js
+	chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+		if (request.action === 'storageChanged') {
+			console.log('Content script received storageChanged message.');
+			refreshButtons();
+		}
 	});
 })();
