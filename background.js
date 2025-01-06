@@ -16,7 +16,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 				sendResponse({ data: result });
 			}
 		});
-		return true; // Indicates that the response will be sent asynchronously
+		return true;
 	} else if (request.action === 'setStorage') {
 		const data = request.data;
 		chrome.storage.local.set(data, () => {
@@ -58,7 +58,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 		});
 		return true;
 	} else if (request.action === 'removeStorage') {
-		// Новое действие для удаления ключей
 		const keys = request.keys;
 		chrome.storage.local.remove(keys, () => {
 			if (chrome.runtime.lastError) {

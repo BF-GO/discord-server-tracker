@@ -56,7 +56,6 @@
 		}
 	}
 
-	// Функция для отправки сообщений в background.js
 	function sendMessage(message) {
 		return new Promise((resolve, reject) => {
 			chrome.runtime.sendMessage(message, (response) => {
@@ -94,15 +93,24 @@
 						action: 'getStorage',
 						keys: [serverId],
 					});
-					const serverData = result ? result[serverId] : null;
+					let serverData = result ? result[serverId] : null;
+
+					if (serverData && typeof serverData.lastVisited !== 'number') {
+						serverData.lastVisited = 0;
+						await sendMessage({
+							action: 'setStorage',
+							data: { [serverId]: serverData },
+						});
+						console.log(`Initialized lastVisited for server ID ${serverId}.`);
+					}
+
 					if (serverData) {
-						const { count, name, link } = serverData;
+						const { count, name, link, lastVisited } = serverData;
 						console.log(
-							`Server ID: ${serverId}, Count: ${count}, Name: ${name}, Link: ${link}`
+							`Server ID: ${serverId}, Count: ${count}, Name: ${name}, Link: ${link}, LastVisited: ${lastVisited}`
 						);
 						updateButton(joinButton, count);
 					} else {
-						// Если сервер удален из хранилища, убрать подсветку
 						updateButton(joinButton, 0);
 					}
 				} catch (error) {
@@ -138,44 +146,60 @@
 				const serverName = getServerName(serverBlock);
 				const serverLink = `https://server-discord.com/${serverId}`;
 
-				try {
-					const result = await sendMessage({
-						action: 'getStorage',
-						keys: [serverId],
-					});
-					let serverData = result ? result[serverId] : null;
-					if (!serverData) {
-						serverData = {
-							count: 0,
-							name: serverName,
-							link: serverLink,
-						};
-					}
-					serverData.count += 1;
-					console.log(
-						`Incrementing count for server ID ${serverId} to ${serverData.count}`
-					);
-
-					await sendMessage({
-						action: 'setStorage',
-						data: { [serverId]: serverData },
-					});
-					console.log(
-						`Count for server ID ${serverId} set to ${serverData.count}`
-					);
-					updateButton(joinButton, serverData.count);
-
-					// Отправляем сообщение об изменении хранилища для обновления popup
-					chrome.runtime.sendMessage({ action: 'storageChanged' });
-				} catch (error) {
-					console.error(
-						`Failed to get/set storage data for server ID ${serverId}:`,
-						error
-					);
-				}
+				await handleJoinButtonClick(
+					joinButton,
+					serverBlock,
+					serverId,
+					serverName,
+					serverLink
+				);
 			}
 		});
 		console.log('Discord Server Tracker: Event delegation set up.');
+	}
+
+	async function handleJoinButtonClick(
+		joinButton,
+		serverBlock,
+		serverId,
+		serverName,
+		serverLink
+	) {
+		try {
+			const result = await sendMessage({
+				action: 'getStorage',
+				keys: [serverId],
+			});
+			let serverData = result ? result[serverId] : null;
+			if (!serverData) {
+				serverData = {
+					count: 0,
+					name: serverName,
+					link: serverLink,
+					lastVisited: Date.now(),
+				};
+			} else {
+				serverData.lastVisited = Date.now();
+			}
+			serverData.count += 1;
+			console.log(
+				`Incrementing count for server ID ${serverId} to ${serverData.count}`
+			);
+
+			await sendMessage({
+				action: 'setStorage',
+				data: { [serverId]: serverData },
+			});
+			console.log(`Count for server ID ${serverId} set to ${serverData.count}`);
+			updateButton(joinButton, serverData.count);
+
+			chrome.runtime.sendMessage({ action: 'storageChanged' });
+		} catch (error) {
+			console.error(
+				`Failed to get/set storage data for server ID ${serverId}:`,
+				error
+			);
+		}
 	}
 
 	function observeDOM() {
@@ -238,9 +262,9 @@
 			});
 	}
 
-	function run() {
+	async function run() {
+		await refreshButtons();
 		setupEventDelegation();
-		refreshButtons();
 		observeDOM();
 		periodicRefresh();
 		logAllStorageData();
@@ -257,7 +281,6 @@
 		console.log('Discord Server Tracker: Content script unloaded.');
 	});
 
-	// Добавляем слушатель для сообщений из popup.js
 	chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 		if (request.action === 'storageChanged') {
 			console.log('Content script received storageChanged message.');

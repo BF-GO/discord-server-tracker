@@ -40,15 +40,24 @@ document.addEventListener('DOMContentLoaded', () => {
 			for (const serverId in result) {
 				if (result.hasOwnProperty(serverId)) {
 					const serverData = result[serverId];
-					const { count, name, link, lastVisited } = serverData;
+					let { count, name, link, lastVisited } = serverData;
 
 					if (count > 0) {
+						if (typeof lastVisited !== 'number') {
+							lastVisited = 0;
+							await sendMessage({
+								action: 'setStorage',
+								data: { [serverId]: { ...serverData, lastVisited } },
+							});
+							console.log(`Initialized lastVisited for server ID ${serverId}.`);
+						}
+
 						servers.push({
 							id: serverId,
 							count: count,
 							name: name || 'Неизвестный сервер',
 							link: link || `https://server-discord.com/${serverId}`,
-							lastVisited: typeof lastVisited === 'number' ? lastVisited : 0,
+							lastVisited: lastVisited,
 						});
 					}
 				}
@@ -78,7 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
 		} else {
 			filteredServers = servers;
 		}
-
 		filteredServers.sort((a, b) => b.lastVisited - a.lastVisited);
 		console.log('Отсортированные отфильтрованные серверы:', filteredServers);
 
@@ -119,20 +127,19 @@ document.addEventListener('DOMContentLoaded', () => {
 					updateLastVisited(server.id);
 				});
 
-				// Создаем кнопку удаления
 				const deleteButton = document.createElement('button');
 				deleteButton.className = 'delete-button';
 				deleteButton.title = 'Удалить сервер';
-				deleteButton.innerHTML = '&times;'; // символ крестика
+				deleteButton.innerHTML = '&times;';
 				deleteButton.addEventListener('click', (e) => {
-					e.stopPropagation(); // Предотвращаем всплытие события
+					e.stopPropagation();
 					deleteServer(server.id);
 				});
 
 				listItem.appendChild(nameSpan);
 				listItem.appendChild(countSpan);
 				listItem.appendChild(linkElement);
-				listItem.appendChild(deleteButton); // Добавляем кнопку удаления
+				listItem.appendChild(deleteButton);
 
 				serverList.appendChild(listItem);
 			}
@@ -191,14 +198,12 @@ document.addEventListener('DOMContentLoaded', () => {
 	async function deleteServer(serverId) {
 		if (confirm('Вы уверены, что хотите удалить этот сервер из списка?')) {
 			try {
-				// Удаляем сервер из хранилища
 				const success = await sendMessage({
 					action: 'removeStorage',
 					keys: [serverId],
 				});
 
 				if (success) {
-					// Обновляем список серверов
 					servers = servers.filter((server) => server.id !== serverId);
 					filteredServers = filteredServers.filter(
 						(server) => server.id !== serverId
@@ -209,7 +214,6 @@ document.addEventListener('DOMContentLoaded', () => {
 					}
 					renderServerList(searchInput.value.trim().toLowerCase());
 
-					// Отправляем сообщение об изменении хранилища для обновления контента
 					chrome.runtime.sendMessage({ action: 'storageChanged' });
 
 					console.log(`Сервер с ID ${serverId} был удален.`);
@@ -219,8 +223,6 @@ document.addEventListener('DOMContentLoaded', () => {
 			}
 		}
 	}
-
-	// Функции для экспорта и импорта данных
 
 	async function exportData() {
 		try {
@@ -263,6 +265,14 @@ document.addEventListener('DOMContentLoaded', () => {
 					throw new Error('Неверный формат файла.');
 				}
 
+				for (const serverId in data) {
+					if (data.hasOwnProperty(serverId)) {
+						if (typeof data[serverId].lastVisited !== 'number') {
+							data[serverId].lastVisited = 0;
+						}
+					}
+				}
+
 				await sendMessage({
 					action: 'setStorage',
 					data: data,
@@ -271,7 +281,6 @@ document.addEventListener('DOMContentLoaded', () => {
 				alert('Данные успешно импортированы.');
 				loadServers();
 
-				// Отправляем сообщение об изменении хранилища для обновления контента
 				chrome.runtime.sendMessage({ action: 'storageChanged' });
 			} catch (error) {
 				console.error('Ошибка при импорте данных:', error);
@@ -282,8 +291,6 @@ document.addEventListener('DOMContentLoaded', () => {
 		};
 		reader.readAsText(file);
 	}
-
-	// Обработчики событий для кнопок экспорта и импорта
 
 	exportButton.addEventListener('click', exportData);
 
