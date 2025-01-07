@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "Discord Server Tracker",
-	"version": "1.1.4",
+	"version": "2.2.4",
 	"description": "Отслеживает нажатия кнопки 'Вступить' на https://server-discord.com/ и отображает количество нажатий.",
 	"permissions": ["storage", "activeTab", "scripting"],
 	"background": {
@@ -17,7 +17,7 @@
 	},
 	"content_scripts": [
 		{
-			"matches": ["https://server-discord.com/*"],
+			"matches": ["https://server-discord.com/*", "https://myserver.gg/*"],
 			"js": ["content.js"],
 			"css": ["styles.css"]
 		}

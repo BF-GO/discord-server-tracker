@@ -1,37 +1,94 @@
 // content.js
 
 (function () {
-	console.log('Discord Server Tracker: Content script loaded.');
-
 	let isActive = true;
+	const currentSite = window.location.hostname;
+
+	if (currentSite.includes('myserver.gg')) {
+		document.body.classList.add('myserver');
+	}
+
+	let sitePrefix = '';
+	if (currentSite.includes('server-discord.com')) {
+		sitePrefix = 'server-discord.com';
+	} else if (currentSite.includes('myserver.gg')) {
+		sitePrefix = 'myserver.gg';
+	} else {
+		return;
+	}
 
 	window.addEventListener('beforeunload', () => {
 		isActive = false;
 	});
 
 	function getServerId(block) {
-		const link = block.querySelector('a[href^="/"]');
-		if (link) {
-			const href = link.getAttribute('href');
-			const id = href.substring(1);
-			console.log(`Found server ID: ${id}`);
-			return id;
+		if (currentSite.includes('server-discord.com')) {
+			const link = block.querySelector('a[href^="/"]');
+			if (link) {
+				return link.getAttribute('href').substring(1);
+			}
+		} else if (currentSite.includes('myserver.gg')) {
+			const joinLink = block.querySelector(
+				'td.join_link a[href^="/"][title="Join this server"]'
+			);
+			if (joinLink) {
+				return joinLink.getAttribute('href').substring(1).split('/')[0];
+			}
 		}
-		console.log('No server ID found.');
 		return null;
 	}
 
 	function getServerName(block) {
-		const nameElement = block.querySelector(
-			'.server__header__label-info__name'
-		);
-		if (nameElement) {
-			const name = nameElement.textContent.trim();
-			console.log(`Found server name: ${name}`);
-			return name;
+		if (currentSite.includes('server-discord.com')) {
+			const nameElement = block.querySelector(
+				'.server__header__label-info__name'
+			);
+			return nameElement
+				? nameElement.textContent.trim()
+				: 'Неизвестный сервер';
+		} else if (currentSite.includes('myserver.gg')) {
+			const nameElement = block.querySelector('span.server_name');
+			return nameElement
+				? nameElement.textContent.trim()
+				: 'Неизвестный сервер';
 		}
-		console.log('No server name found.');
 		return 'Неизвестный сервер';
+	}
+
+	function getServerMainLink(block) {
+		if (currentSite.includes('server-discord.com')) {
+			const mainLink = block.querySelector(
+				'.server__header__label-info a[href^="/"]'
+			);
+			return mainLink
+				? `https://server-discord.com${mainLink.getAttribute('href')}`
+				: null;
+		} else if (currentSite.includes('myserver.gg')) {
+			const mainLink = block.querySelector('.servers_info a[href^="/"]');
+			return mainLink
+				? `https://myserver.gg${mainLink.getAttribute('href')}`
+				: null;
+		}
+		return null;
+	}
+
+	function getJoinLink(block) {
+		if (currentSite.includes('server-discord.com')) {
+			const joinLink = block.querySelector(
+				'.server__header__label-join__button a[href^="/"]'
+			);
+			return joinLink
+				? `https://server-discord.com${joinLink.getAttribute('href')}`
+				: null;
+		} else if (currentSite.includes('myserver.gg')) {
+			const joinLink = block.querySelector(
+				'td.join_link a[href^="/"][title="Join this server"]'
+			);
+			return joinLink
+				? `https://myserver.gg${joinLink.getAttribute('href')}`
+				: null;
+		}
+		return null;
 	}
 
 	function updateButton(button, count) {
@@ -42,16 +99,13 @@
 				countSpan = document.createElement('span');
 				countSpan.className = 'click-count';
 				button.appendChild(countSpan);
-				console.log('Added count span to button.');
 			}
 			countSpan.textContent = ` (${count})`;
-			console.log(`Button updated with count: ${count}`);
 		} else {
 			button.classList.remove('tracked-join-button');
 			const countSpan = button.querySelector('.click-count');
 			if (countSpan) {
 				button.removeChild(countSpan);
-				console.log('Removed count span from button.');
 			}
 		}
 	}
@@ -71,91 +125,97 @@
 	}
 
 	async function refreshButtons() {
-		if (!isActive) {
-			console.warn('Extension context invalidated. Skipping refreshButtons.');
-			return;
+		if (!isActive) return;
+
+		let serverBlocks = [];
+		if (currentSite.includes('server-discord.com')) {
+			serverBlocks = document.querySelectorAll('.guildApp__guild');
+		} else if (currentSite.includes('myserver.gg')) {
+			serverBlocks = document.querySelectorAll('table.servers tbody tr.server');
 		}
 
-		console.log('Discord Server Tracker: Refreshing buttons...');
-		const serverBlocks = document.querySelectorAll('.guildApp__guild');
-		console.log(`Refreshing ${serverBlocks.length} server blocks.`);
-
 		for (const block of serverBlocks) {
-			const joinButton = block.querySelector(
-				'.server__header__label-join__button'
-			);
+			let joinButton;
+			if (currentSite.includes('server-discord.com')) {
+				joinButton = block.querySelector('.server__header__label-join__button');
+			} else if (currentSite.includes('myserver.gg')) {
+				joinButton = block.querySelector(
+					'td.join_link a[href^="/"][title="Join this server"]'
+				);
+			}
+
 			if (joinButton) {
 				const serverId = getServerId(block);
 				if (!serverId) continue;
 
 				try {
+					const key = `${sitePrefix}_${serverId}`;
 					const result = await sendMessage({
 						action: 'getStorage',
-						keys: [serverId],
+						keys: [key],
 					});
-					let serverData = result ? result[serverId] : null;
+					let serverData = result ? result[key] : null;
 
 					if (serverData && typeof serverData.lastVisited !== 'number') {
 						serverData.lastVisited = 0;
 						await sendMessage({
 							action: 'setStorage',
-							data: { [serverId]: serverData },
+							data: { [key]: serverData },
 						});
-						console.log(`Initialized lastVisited for server ID ${serverId}.`);
 					}
 
 					if (serverData) {
-						const { count, name, link, lastVisited } = serverData;
-						console.log(
-							`Server ID: ${serverId}, Count: ${count}, Name: ${name}, Link: ${link}, LastVisited: ${lastVisited}`
-						);
-						updateButton(joinButton, count);
+						updateButton(joinButton, serverData.count);
 					} else {
 						updateButton(joinButton, 0);
 					}
-				} catch (error) {
-					console.error(
-						`Error retrieving data for server ID ${serverId}:`,
-						error
-					);
-				}
+				} catch (error) {}
 			}
 		}
 	}
 
 	function setupEventDelegation() {
 		document.body.addEventListener('click', async function (event) {
-			if (!isActive) {
-				console.warn('Extension context invalidated. Skipping event handling.');
-				return;
+			if (!isActive) return;
+
+			let joinButton;
+			if (currentSite.includes('server-discord.com')) {
+				joinButton = event.target.closest(
+					'.server__header__label-join__button'
+				);
+			} else if (currentSite.includes('myserver.gg')) {
+				joinButton = event.target.closest(
+					'td.join_link a[href^="/"][title="Join this server"]'
+				);
 			}
 
-			const target = event.target;
-			const joinButton = target.closest('.server__header__label-join__button');
-
 			if (joinButton) {
-				const serverBlock = joinButton.closest('.guildApp__guild');
-				if (!serverBlock) {
-					console.log('Server block not found for the clicked join button.');
-					return;
+				let serverBlock;
+				if (currentSite.includes('server-discord.com')) {
+					serverBlock = joinButton.closest('.guildApp__guild');
+				} else if (currentSite.includes('myserver.gg')) {
+					serverBlock = joinButton.closest('tr.server');
 				}
+
+				if (!serverBlock) return;
 
 				const serverId = getServerId(serverBlock);
 				if (!serverId) return;
 
 				const serverName = getServerName(serverBlock);
-				const serverLink = `https://server-discord.com/${serverId}`;
+				const serverMainLink = getServerMainLink(serverBlock);
+				const serverJoinLink = getJoinLink(serverBlock);
 
 				await handleJoinButtonClick(
 					joinButton,
 					serverBlock,
 					serverId,
 					serverName,
-					serverLink
+					serverMainLink,
+					serverJoinLink
 				);
 			}
 		});
-		console.log('Discord Server Tracker: Event delegation set up.');
 	}
 
 	async function handleJoinButtonClick(
@@ -163,50 +223,41 @@
 		serverBlock,
 		serverId,
 		serverName,
-		serverLink
+		serverMainLink,
+		serverJoinLink
 	) {
 		try {
+			const key = `${sitePrefix}_${serverId}`;
 			const result = await sendMessage({
 				action: 'getStorage',
-				keys: [serverId],
+				keys: [key],
 			});
-			let serverData = result ? result[serverId] : null;
+			let serverData = result ? result[key] : null;
 			if (!serverData) {
 				serverData = {
 					count: 0,
 					name: serverName,
-					link: serverLink,
+					mainLink: serverMainLink,
+					joinLink: serverJoinLink,
 					lastVisited: Date.now(),
 				};
 			} else {
 				serverData.lastVisited = Date.now();
 			}
 			serverData.count += 1;
-			console.log(
-				`Incrementing count for server ID ${serverId} to ${serverData.count}`
-			);
 
 			await sendMessage({
 				action: 'setStorage',
-				data: { [serverId]: serverData },
+				data: { [key]: serverData },
 			});
-			console.log(`Count for server ID ${serverId} set to ${serverData.count}`);
 			updateButton(joinButton, serverData.count);
 
 			chrome.runtime.sendMessage({ action: 'storageChanged' });
-		} catch (error) {
-			console.error(
-				`Failed to get/set storage data for server ID ${serverId}:`,
-				error
-			);
-		}
+		} catch (error) {}
 	}
 
 	function observeDOM() {
-		if (!isActive) {
-			console.warn('Extension context invalidated. Skipping DOM observation.');
-			return;
-		}
+		if (!isActive) return;
 
 		const observer = new MutationObserver((mutations) => {
 			let needsRefresh = false;
@@ -214,15 +265,18 @@
 				if (mutation.type === 'childList') {
 					mutation.addedNodes.forEach((node) => {
 						if (node.nodeType === 1) {
-							if (node.matches('.guildApp__guild')) {
-								console.log('New server block added.');
+							let matches;
+							if (currentSite.includes('server-discord.com')) {
+								matches =
+									node.matches('.guildApp__guild') ||
+									node.querySelectorAll('.guildApp__guild').length > 0;
+							} else if (currentSite.includes('myserver.gg')) {
+								matches =
+									node.matches('table.servers') ||
+									node.querySelectorAll('table.servers').length > 0;
+							}
+							if (matches) {
 								needsRefresh = true;
-							} else {
-								const nestedBlocks = node.querySelectorAll('.guildApp__guild');
-								if (nestedBlocks.length > 0) {
-									console.log('New nested server block(s) added.');
-									needsRefresh = true;
-								}
 							}
 						}
 					});
@@ -235,31 +289,13 @@
 		});
 
 		observer.observe(document.body, { childList: true, subtree: true });
-		console.log('Discord Server Tracker: MutationObserver initialized.');
 	}
 
 	function periodicRefresh() {
-		if (!isActive) {
-			console.warn('Extension context invalidated. Skipping periodic refresh.');
-			return;
-		}
-
+		if (!isActive) return;
 		setInterval(() => {
-			if (isActive) {
-				console.log('Discord Server Tracker: Periodic refresh of buttons.');
-				refreshButtons();
-			}
+			if (isActive) refreshButtons();
 		}, 5000);
-	}
-
-	function logAllStorageData() {
-		sendMessage({ action: 'getAllStorage' })
-			.then((data) => {
-				console.log('All stored data:', data);
-			})
-			.catch((error) => {
-				console.error('Failed to retrieve all storage data:', error);
-			});
 	}
 
 	async function run() {
@@ -267,7 +303,6 @@
 		setupEventDelegation();
 		observeDOM();
 		periodicRefresh();
-		logAllStorageData();
 	}
 
 	if (document.readyState === 'loading') {
@@ -278,12 +313,10 @@
 
 	window.addEventListener('unload', () => {
 		isActive = false;
-		console.log('Discord Server Tracker: Content script unloaded.');
 	});
 
 	chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 		if (request.action === 'storageChanged') {
-			console.log('Content script received storageChanged message.');
 			refreshButtons();
 		}
 	});

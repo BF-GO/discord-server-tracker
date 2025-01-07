@@ -34,29 +34,38 @@ document.addEventListener('DOMContentLoaded', () => {
 	async function loadServers() {
 		try {
 			const result = await sendMessage({ action: 'getAllStorage' });
-
 			servers = [];
 
-			for (const serverId in result) {
-				if (result.hasOwnProperty(serverId)) {
-					const serverData = result[serverId];
-					let { count, name, link, lastVisited } = serverData;
+			for (const key in result) {
+				if (result.hasOwnProperty(key)) {
+					const [site, serverId] = key.split('_');
+					const serverData = result[key];
+					let { count, name, mainLink, joinLink, lastVisited } = serverData;
 
 					if (count > 0) {
 						if (typeof lastVisited !== 'number') {
 							lastVisited = 0;
 							await sendMessage({
 								action: 'setStorage',
-								data: { [serverId]: { ...serverData, lastVisited } },
+								data: { [key]: { ...serverData, lastVisited } },
 							});
-							console.log(`Initialized lastVisited for server ID ${serverId}.`);
+						}
+
+						if (site === 'server-discord.com' && !joinLink) {
+							joinLink = `${mainLink}/join`;
+							await sendMessage({
+								action: 'setStorage',
+								data: { [key]: { ...serverData, joinLink } },
+							});
 						}
 
 						servers.push({
+							site: site,
 							id: serverId,
 							count: count,
 							name: name || 'Неизвестный сервер',
-							link: link || `https://server-discord.com/${serverId}`,
+							mainLink: mainLink || `${getSiteURL(site)}${serverId}`,
+							joinLink: joinLink || `${getSiteURL(site)}${serverId}/join`,
 							lastVisited: lastVisited,
 						});
 					}
@@ -64,14 +73,20 @@ document.addEventListener('DOMContentLoaded', () => {
 			}
 
 			servers.sort((a, b) => b.lastVisited - a.lastVisited);
-			console.log('Отсортированные серверы:', servers);
-
-			filteredServers = servers;
+			filteredServers = [...servers];
 			currentPage = 1;
 			calculateTotalPages();
 			renderServerList();
-		} catch (error) {
-			console.error('Ошибка при загрузке серверов:', error);
+		} catch (error) {}
+	}
+
+	function getSiteURL(site) {
+		if (site === 'server-discord.com') {
+			return 'https://server-discord.com/';
+		} else if (site === 'myserver.gg') {
+			return 'https://myserver.gg/';
+		} else {
+			return '';
 		}
 	}
 
@@ -85,10 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
 				server.name.toLowerCase().includes(filter.toLowerCase())
 			);
 		} else {
-			filteredServers = servers;
+			filteredServers = [...servers];
 		}
-		filteredServers.sort((a, b) => b.lastVisited - a.lastVisited);
-		console.log('Отсортированные отфильтрованные серверы:', filteredServers);
 
 		calculateTotalPages();
 
@@ -109,10 +122,20 @@ document.addEventListener('DOMContentLoaded', () => {
 				const listItem = document.createElement('li');
 				listItem.className = 'server-item';
 
-				const nameSpan = document.createElement('span');
-				nameSpan.className = 'server-name';
-				nameSpan.title = server.name;
-				nameSpan.textContent = server.name;
+				const nameLink = document.createElement('a');
+				nameLink.className = 'server-name';
+				nameLink.href = server.mainLink;
+				nameLink.textContent = server.name;
+				nameLink.title = server.name;
+				nameLink.target = '_blank';
+				nameLink.style.flex = '1';
+				nameLink.style.marginRight = '10px';
+				nameLink.style.textDecoration = 'none';
+				nameLink.style.color = 'var(--text-color)';
+				nameLink.addEventListener('click', () => {
+					updateLastVisited(server.site, server.id);
+				});
+				nameLink.style.cursor = 'pointer';
 
 				const countSpan = document.createElement('span');
 				countSpan.className = 'server-count';
@@ -121,10 +144,11 @@ document.addEventListener('DOMContentLoaded', () => {
 				const linkElement = document.createElement('a');
 				linkElement.className = 'server-link';
 				linkElement.textContent = 'Перейти';
-				linkElement.href = server.link;
+				linkElement.href = server.joinLink;
 				linkElement.target = '_blank';
+				linkElement.style.marginRight = '10px';
 				linkElement.addEventListener('click', () => {
-					updateLastVisited(server.id);
+					updateLastVisited(server.site, server.id);
 				});
 
 				const deleteButton = document.createElement('button');
@@ -133,10 +157,10 @@ document.addEventListener('DOMContentLoaded', () => {
 				deleteButton.innerHTML = '&times;';
 				deleteButton.addEventListener('click', (e) => {
 					e.stopPropagation();
-					deleteServer(server.id);
+					deleteServer(server.site, server.id);
 				});
 
-				listItem.appendChild(nameSpan);
+				listItem.appendChild(nameLink);
 				listItem.appendChild(countSpan);
 				listItem.appendChild(linkElement);
 				listItem.appendChild(deleteButton);
@@ -165,48 +189,48 @@ document.addEventListener('DOMContentLoaded', () => {
 					totalPages = 1;
 					renderServerList();
 				}
-			} catch (error) {
-				console.error('Ошибка при очистке хранилища:', error);
-			}
+			} catch (error) {}
 		}
 	}
 
-	async function updateLastVisited(serverId) {
+	async function updateLastVisited(site, serverId) {
 		const timestamp = Date.now();
 
 		try {
+			const key = `${site}_${serverId}`;
 			const result = await sendMessage({
 				action: 'getStorage',
-				keys: [serverId],
+				keys: [key],
 			});
-			if (result && result[serverId]) {
+			if (result && result[key]) {
 				const updatedData = {
-					...result[serverId],
+					...result[key],
 					lastVisited: timestamp,
 				};
 				await sendMessage({
 					action: 'setStorage',
-					data: { [serverId]: updatedData },
+					data: { [key]: updatedData },
 				});
 				loadServers();
 			}
-		} catch (error) {
-			console.error('Ошибка при обновлении lastVisited:', error);
-		}
+		} catch (error) {}
 	}
 
-	async function deleteServer(serverId) {
+	async function deleteServer(site, serverId) {
 		if (confirm('Вы уверены, что хотите удалить этот сервер из списка?')) {
 			try {
+				const key = `${site}_${serverId}`;
 				const success = await sendMessage({
 					action: 'removeStorage',
-					keys: [serverId],
+					keys: [key],
 				});
 
 				if (success) {
-					servers = servers.filter((server) => server.id !== serverId);
+					servers = servers.filter(
+						(server) => !(server.site === site && server.id === serverId)
+					);
 					filteredServers = filteredServers.filter(
-						(server) => server.id !== serverId
+						(server) => !(server.site === site && server.id === serverId)
 					);
 					calculateTotalPages();
 					if (currentPage > totalPages) {
@@ -215,12 +239,8 @@ document.addEventListener('DOMContentLoaded', () => {
 					renderServerList(searchInput.value.trim().toLowerCase());
 
 					chrome.runtime.sendMessage({ action: 'storageChanged' });
-
-					console.log(`Сервер с ID ${serverId} был удален.`);
 				}
-			} catch (error) {
-				console.error('Ошибка при удалении сервера:', error);
-			}
+			} catch (error) {}
 		}
 	}
 
@@ -233,26 +253,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
 			const a = document.createElement('a');
 			a.href = url;
-			a.download = `discord_servers_backup_${new Date()
+			a.download = `servers_backup_${new Date()
 				.toISOString()
 				.slice(0, 10)}.json`;
 			document.body.appendChild(a);
 			a.click();
 			document.body.removeChild(a);
 			URL.revokeObjectURL(url);
-
-			console.log('Данные успешно экспортированы.');
 		} catch (error) {
-			console.error('Ошибка при экспорте данных:', error);
 			alert('Не удалось экспортировать данные.');
 		}
 	}
 
 	function importData(event) {
 		const file = event.target.files[0];
-		if (!file) {
-			return;
-		}
+		if (!file) return;
 
 		const reader = new FileReader();
 		reader.onload = async (e) => {
@@ -260,15 +275,35 @@ document.addEventListener('DOMContentLoaded', () => {
 				const content = e.target.result;
 				const data = JSON.parse(content);
 
-				// Валидация структуры данных
 				if (typeof data !== 'object' || data === null) {
 					throw new Error('Неверный формат файла.');
 				}
 
-				for (const serverId in data) {
-					if (data.hasOwnProperty(serverId)) {
-						if (typeof data[serverId].lastVisited !== 'number') {
-							data[serverId].lastVisited = 0;
+				for (const key in data) {
+					if (data.hasOwnProperty(key)) {
+						if (typeof data[key].lastVisited !== 'number') {
+							data[key].lastVisited = 0;
+						}
+						if (
+							key.startsWith('myserver.gg_') &&
+							!data[key].mainLink &&
+							data[key].joinLink
+						) {
+							const [site, serverId] = key.split('_');
+							if (site === 'myserver.gg') {
+								data[key].mainLink = `https://myserver.gg/${serverId}`;
+							}
+						}
+						if (
+							key.startsWith('server-discord.com_') &&
+							!data[key].mainLink &&
+							data[key].link
+						) {
+							data[key].mainLink = data[key].link;
+							delete data[key].link;
+						}
+						if (key.startsWith('server-discord.com_') && !data[key].joinLink) {
+							data[key].joinLink = `${data[key].mainLink}/join`;
 						}
 					}
 				}
@@ -280,10 +315,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 				alert('Данные успешно импортированы.');
 				loadServers();
-
 				chrome.runtime.sendMessage({ action: 'storageChanged' });
 			} catch (error) {
-				console.error('Ошибка при импорте данных:', error);
 				alert(
 					'Не удалось импортировать данные. Убедитесь, что файл имеет правильный формат.'
 				);
@@ -293,11 +326,9 @@ document.addEventListener('DOMContentLoaded', () => {
 	}
 
 	exportButton.addEventListener('click', exportData);
-
 	importButton.addEventListener('click', () => {
 		importFileInput.click();
 	});
-
 	importFileInput.addEventListener('change', importData);
 
 	searchInput.addEventListener('input', (e) => {
@@ -322,12 +353,11 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 	});
 
-	loadServers();
-
 	chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 		if (request.action === 'storageChanged') {
-			console.log('Popup received storageChanged message.');
 			loadServers();
 		}
 	});
+
+	loadServers();
 });
