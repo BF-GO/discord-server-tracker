@@ -1,4 +1,5 @@
-document.addEventListener('DOMContentLoaded', () => {
+// popup.js
+document.addEventListener('DOMContentLoaded', async () => {
 	const resetButton = document.getElementById('reset-button');
 	const serverList = document.getElementById('server-list');
 	const searchInput = document.getElementById('search-input');
@@ -8,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
 	const exportButton = document.getElementById('export-button');
 	const importButton = document.getElementById('import-button');
 	const importFileInput = document.getElementById('import-file-input');
-
 	const settingsButton = document.getElementById('settings-button');
 	const settingsModal = document.getElementById('settings-modal');
 	const closeModal = document.getElementById('close-modal');
@@ -19,19 +19,56 @@ document.addEventListener('DOMContentLoaded', () => {
 	let filteredServers = [];
 	let currentPage = 1;
 	let totalPages = 1;
+	let currentTranslations = {};
 
 	function sendMessage(message) {
 		return new Promise((resolve, reject) => {
 			chrome.runtime.sendMessage(message, (response) => {
 				if (chrome.runtime.lastError) {
 					reject(new Error(chrome.runtime.lastError.message));
-				} else if (response.error) {
+				} else if (response && response.error) {
 					reject(new Error(response.error));
 				} else {
-					resolve(response.data || response.success);
+					resolve(response ? response.data || response.success : null);
 				}
 			});
 		});
+	}
+
+	async function loadTranslations(language) {
+		const response = await fetch(`locales/${language}.json`);
+		if (!response.ok) {
+			throw new Error(
+				`Не удалось загрузить файл переводов для языка: ${language}`
+			);
+		}
+		const translations = await response.json();
+		return translations;
+	}
+
+	function updateUILanguageElements() {
+		const elements = document.querySelectorAll('[data-i18n-key]');
+		elements.forEach((el) => {
+			const key = el.getAttribute('data-i18n-key');
+			if (currentTranslations[key]) {
+				el.textContent = currentTranslations[key];
+			}
+		});
+		if (searchInput && currentTranslations['searchPlaceholder']) {
+			searchInput.setAttribute(
+				'placeholder',
+				currentTranslations['searchPlaceholder']
+			);
+		}
+	}
+
+	async function updateUILanguage(language) {
+		try {
+			currentTranslations = await loadTranslations(language);
+			updateUILanguageElements();
+		} catch (error) {
+			console.error(error);
+		}
 	}
 
 	async function loadServers() {
@@ -64,7 +101,10 @@ document.addEventListener('DOMContentLoaded', () => {
 							site: site,
 							id: serverId,
 							count: count,
-							name: name || 'Неизвестный сервер',
+							name:
+								name ||
+								currentTranslations['unknownServer'] ||
+								'Неизвестный сервер',
 							mainLink: mainLink || `${getSiteURL(site)}${serverId}`,
 							joinLink: joinLink || `${getSiteURL(site)}${serverId}/join`,
 							lastVisited: lastVisited,
@@ -78,7 +118,9 @@ document.addEventListener('DOMContentLoaded', () => {
 			currentPage = 1;
 			calculateTotalPages();
 			renderServerList();
-		} catch (error) {}
+		} catch (error) {
+			console.error(error);
+		}
 	}
 
 	function getSiteURL(site) {
@@ -117,7 +159,9 @@ document.addEventListener('DOMContentLoaded', () => {
 		serverList.innerHTML = '';
 
 		if (serversToDisplay.length === 0) {
-			serverList.innerHTML = '<li>Нет отслеживаемых серверов.</li>';
+			serverList.innerHTML = `<li>${
+				currentTranslations['noServers'] || 'Нет отслеживаемых серверов.'
+			}</li>`;
 		} else {
 			for (const server of serversToDisplay) {
 				const listItem = document.createElement('li');
@@ -135,11 +179,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 				const countSpan = document.createElement('span');
 				countSpan.className = 'server-count';
-				countSpan.textContent = `Нажатий: ${server.count}`;
+				countSpan.textContent = `${
+					currentTranslations['clicks'] || 'Нажатий'
+				}: ${server.count}`;
 
 				const linkElement = document.createElement('a');
 				linkElement.className = 'server-link';
-				linkElement.textContent = 'Перейти';
+				linkElement.textContent = currentTranslations['goTo'] || 'Перейти';
 				linkElement.href = server.joinLink;
 				linkElement.target = '_blank';
 				linkElement.addEventListener('click', () => {
@@ -148,7 +194,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 				const deleteButton = document.createElement('button');
 				deleteButton.className = 'delete-button';
-				deleteButton.title = 'Удалить сервер';
+				deleteButton.title =
+					currentTranslations['deleteServer'] || 'Удалить сервер';
 				deleteButton.innerHTML = '&times;';
 				deleteButton.addEventListener('click', (e) => {
 					e.stopPropagation();
@@ -168,13 +215,22 @@ document.addEventListener('DOMContentLoaded', () => {
 	}
 
 	function updatePaginationControls() {
-		pageInfo.textContent = `Страница ${currentPage} из ${totalPages}`;
+		pageInfo.textContent = (
+			currentTranslations['pageInfo'] || 'Страница {0} из {1}'
+		)
+			.replace('{0}', currentPage)
+			.replace('{1}', totalPages);
 		prevPageButton.disabled = currentPage === 1;
 		nextPageButton.disabled = currentPage === totalPages;
 	}
 
 	async function resetCounters() {
-		if (confirm('Вы уверены, что хотите сбросить все счетчики?')) {
+		if (
+			confirm(
+				currentTranslations['confirmReset'] ||
+					'Вы уверены, что хотите сбросить все счетчики?'
+			)
+		) {
 			try {
 				const success = await sendMessage({ action: 'clearStorage' });
 				if (success) {
@@ -185,7 +241,9 @@ document.addEventListener('DOMContentLoaded', () => {
 					renderServerList();
 					settingsModal.style.display = 'none';
 				}
-			} catch (error) {}
+			} catch (error) {
+				console.error(error);
+			}
 		}
 	}
 
@@ -202,11 +260,18 @@ document.addEventListener('DOMContentLoaded', () => {
 				});
 				loadServers();
 			}
-		} catch (error) {}
+		} catch (error) {
+			console.error(error);
+		}
 	}
 
 	async function deleteServer(site, serverId) {
-		if (confirm('Вы уверены, что хотите удалить этот сервер из списка?')) {
+		if (
+			confirm(
+				currentTranslations['confirmDelete'] ||
+					'Вы уверены, что хотите удалить этот сервер из списка?'
+			)
+		) {
 			try {
 				const key = `${site}_${serverId}`;
 				const success = await sendMessage({
@@ -228,7 +293,9 @@ document.addEventListener('DOMContentLoaded', () => {
 					renderServerList(searchInput.value.trim().toLowerCase());
 					chrome.runtime.sendMessage({ action: 'storageChanged' });
 				}
-			} catch (error) {}
+			} catch (error) {
+				console.error(error);
+			}
 		}
 	}
 
@@ -249,7 +316,10 @@ document.addEventListener('DOMContentLoaded', () => {
 			document.body.removeChild(a);
 			URL.revokeObjectURL(url);
 		} catch (error) {
-			alert('Не удалось экспортировать данные.');
+			alert(
+				currentTranslations['exportError'] ||
+					'Не удалось экспортировать данные.'
+			);
 		}
 	}
 
@@ -264,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
 				const data = JSON.parse(content);
 
 				if (typeof data !== 'object' || data === null) {
-					throw new Error('Неверный формат файла.');
+					throw new Error('Invalid file format.');
 				}
 
 				for (const key in data) {
@@ -297,12 +367,16 @@ document.addEventListener('DOMContentLoaded', () => {
 				}
 
 				await sendMessage({ action: 'setStorage', data: data });
-				alert('Данные успешно импортированы.');
+				alert(
+					currentTranslations['importSuccess'] ||
+						'Данные успешно импортированы.'
+				);
 				loadServers();
 				chrome.runtime.sendMessage({ action: 'storageChanged' });
 			} catch (error) {
 				alert(
-					'Не удалось импортировать данные. Убедитесь, что файл имеет правильный формат.'
+					currentTranslations['importError'] ||
+						'Не удалось импортировать данные.'
 				);
 			}
 		};
@@ -348,15 +422,25 @@ document.addEventListener('DOMContentLoaded', () => {
 			settingsModal.style.display = 'none';
 		}
 	});
+
 	languageSelect.addEventListener('change', (event) => {
 		const selectedLanguage = event.target.value;
 		chrome.storage.local.set({ language: selectedLanguage }, () => {
 			console.log('Выбранный язык:', selectedLanguage);
 			settingsModal.style.display = 'none';
+			updateUILanguage(selectedLanguage);
 		});
 	});
 
 	resetButton.addEventListener('click', resetCounters);
+
+	let savedLanguage = await new Promise((resolve) => {
+		chrome.storage.local.get('language', (data) => {
+			resolve(data.language || 'ru');
+		});
+	});
+	languageSelect.value = savedLanguage;
+	updateUILanguage(savedLanguage);
 
 	loadServers();
 });

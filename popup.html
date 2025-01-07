@@ -2,7 +2,7 @@
 <html lang="ru">
 	<head>
 		<meta charset="UTF-8" />
-		<title>Discord Server Tracker</title>
+		<title data-i18n="appTitle">Discord Server Tracker</title>
 		<link rel="stylesheet" href="popup.css" />
 		<link
 			href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
@@ -12,7 +12,7 @@
 	<body>
 		<div class="popup-container">
 			<header>
-				<h1>Discord Server Tracker</h1>
+				<h1 data-i18n-key="appTitle">Discord Server Tracker</h1>
 				<div class="header-buttons">
 					<button id="settings-button" class="icon-button" title="Настройки">
 						<img
@@ -24,7 +24,7 @@
 				</div>
 			</header>
 			<main>
-				<h2>Список серверов:</h2>
+				<h2 data-i18n-key="serverListTitle">Список серверов:</h2>
 				<input type="text" id="search-input" placeholder="Поиск сервера..." />
 				<ul id="server-list"></ul>
 				<div id="pagination" class="pagination">
@@ -57,7 +57,7 @@
 		<div id="settings-modal" class="modal">
 			<div class="modal__content">
 				<div class="modal__header">
-					<h2 class="modal__title">Настройки</h2>
+					<h2 class="modal__title" data-i18n-key="settingsTitle">Настройки</h2>
 					<button id="close-modal" class="modal__close" title="Закрыть">
 						&times;
 					</button>
@@ -74,7 +74,7 @@
 								alt="Экспорт"
 								class="button-icon"
 							/>
-							Экспорт
+							<span data-i18n-key="export">Экспорт</span>
 						</button>
 						<button
 							id="import-button"
@@ -86,7 +86,7 @@
 								alt="Импорт"
 								class="button-icon"
 							/>
-							Импорт
+							<span data-i18n-key="import">Импорт</span>
 						</button>
 					</div>
 					<div class="reset-container">
@@ -95,7 +95,8 @@
 							class="modal__button modal__button--reset"
 							title="Сбросить все счетчики"
 						>
-							<span class="reset-icon"></span> Сбросить
+							<span class="reset-icon"></span>
+							<span data-i18n-key="reset">Сбросить</span>
 						</button>
 					</div>
 					<div class="language-selection">
@@ -105,7 +106,7 @@
 								alt="Язык"
 								class="language-icon"
 							/>
-							Выберите язык:
+							<span data-i18n-key="chooseLanguage">Выберите язык:</span>
 						</label>
 						<select id="language-select">
 							<option value="ru">Русский</option>
