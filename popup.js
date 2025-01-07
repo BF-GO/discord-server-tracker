@@ -1,5 +1,3 @@
-// popup.js
-
 document.addEventListener('DOMContentLoaded', () => {
 	const resetButton = document.getElementById('reset-button');
 	const serverList = document.getElementById('server-list');
@@ -10,6 +8,11 @@ document.addEventListener('DOMContentLoaded', () => {
 	const exportButton = document.getElementById('export-button');
 	const importButton = document.getElementById('import-button');
 	const importFileInput = document.getElementById('import-file-input');
+
+	const settingsButton = document.getElementById('settings-button');
+	const settingsModal = document.getElementById('settings-modal');
+	const closeModal = document.getElementById('close-modal');
+	const languageSelect = document.getElementById('language-select');
 
 	const SERVERS_PER_PAGE = 10;
 	let servers = [];
@@ -50,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
 								data: { [key]: { ...serverData, lastVisited } },
 							});
 						}
-
 						if (site === 'server-discord.com' && !joinLink) {
 							joinLink = `${mainLink}/join`;
 							await sendMessage({
@@ -58,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
 								data: { [key]: { ...serverData, joinLink } },
 							});
 						}
-
 						servers.push({
 							site: site,
 							id: serverId,
@@ -128,14 +129,9 @@ document.addEventListener('DOMContentLoaded', () => {
 				nameLink.textContent = server.name;
 				nameLink.title = server.name;
 				nameLink.target = '_blank';
-				nameLink.style.flex = '1';
-				nameLink.style.marginRight = '10px';
-				nameLink.style.textDecoration = 'none';
-				nameLink.style.color = 'var(--text-color)';
 				nameLink.addEventListener('click', () => {
 					updateLastVisited(server.site, server.id);
 				});
-				nameLink.style.cursor = 'pointer';
 
 				const countSpan = document.createElement('span');
 				countSpan.className = 'server-count';
@@ -146,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
 				linkElement.textContent = 'Перейти';
 				linkElement.href = server.joinLink;
 				linkElement.target = '_blank';
-				linkElement.style.marginRight = '10px';
 				linkElement.addEventListener('click', () => {
 					updateLastVisited(server.site, server.id);
 				});
@@ -188,6 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
 					currentPage = 1;
 					totalPages = 1;
 					renderServerList();
+					settingsModal.style.display = 'none';
 				}
 			} catch (error) {}
 		}
@@ -195,18 +191,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	async function updateLastVisited(site, serverId) {
 		const timestamp = Date.now();
-
 		try {
 			const key = `${site}_${serverId}`;
-			const result = await sendMessage({
-				action: 'getStorage',
-				keys: [key],
-			});
+			const result = await sendMessage({ action: 'getStorage', keys: [key] });
 			if (result && result[key]) {
-				const updatedData = {
-					...result[key],
-					lastVisited: timestamp,
-				};
+				const updatedData = { ...result[key], lastVisited: timestamp };
 				await sendMessage({
 					action: 'setStorage',
 					data: { [key]: updatedData },
@@ -237,7 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
 						currentPage = totalPages;
 					}
 					renderServerList(searchInput.value.trim().toLowerCase());
-
 					chrome.runtime.sendMessage({ action: 'storageChanged' });
 				}
 			} catch (error) {}
@@ -308,11 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
 					}
 				}
 
-				await sendMessage({
-					action: 'setStorage',
-					data: data,
-				});
-
+				await sendMessage({ action: 'setStorage', data: data });
 				alert('Данные успешно импортированы.');
 				loadServers();
 				chrome.runtime.sendMessage({ action: 'storageChanged' });
@@ -330,34 +314,49 @@ document.addEventListener('DOMContentLoaded', () => {
 		importFileInput.click();
 	});
 	importFileInput.addEventListener('change', importData);
-
 	searchInput.addEventListener('input', (e) => {
 		const filter = e.target.value.trim().toLowerCase();
 		currentPage = 1;
 		renderServerList(filter);
 	});
-
-	resetButton.addEventListener('click', resetCounters);
-
 	prevPageButton.addEventListener('click', () => {
 		if (currentPage > 1) {
 			currentPage--;
 			renderServerList(searchInput.value.trim().toLowerCase());
 		}
 	});
-
 	nextPageButton.addEventListener('click', () => {
 		if (currentPage < totalPages) {
 			currentPage++;
 			renderServerList(searchInput.value.trim().toLowerCase());
 		}
 	});
-
 	chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 		if (request.action === 'storageChanged') {
 			loadServers();
 		}
 	});
+
+	settingsButton.addEventListener('click', () => {
+		settingsModal.style.display = 'flex';
+	});
+	closeModal.addEventListener('click', () => {
+		settingsModal.style.display = 'none';
+	});
+	window.addEventListener('click', (event) => {
+		if (event.target === settingsModal) {
+			settingsModal.style.display = 'none';
+		}
+	});
+	languageSelect.addEventListener('change', (event) => {
+		const selectedLanguage = event.target.value;
+		chrome.storage.local.set({ language: selectedLanguage }, () => {
+			console.log('Выбранный язык:', selectedLanguage);
+			settingsModal.style.display = 'none';
+		});
+	});
+
+	resetButton.addEventListener('click', resetCounters);
 
 	loadServers();
 });

@@ -14,23 +14,12 @@
 			<header>
 				<h1>Discord Server Tracker</h1>
 				<div class="header-buttons">
-					<button
-						id="export-button"
-						class="icon-button"
-						title="Экспортировать данные"
-					>
+					<button id="settings-button" class="icon-button" title="Настройки">
 						<img
-							src="icons/export-icon.png"
-							alt="Экспорт"
+							src="icons/gear-icon.png"
+							alt="Настройки"
 							class="button-icon"
 						/>
-					</button>
-					<button
-						id="import-button"
-						class="icon-button"
-						title="Импортировать данные"
-					>
-						<img src="icons/import-icon.png" alt="Импорт" class="button-icon" />
 					</button>
 				</div>
 			</header>
@@ -56,21 +45,75 @@
 					</button>
 				</div>
 			</main>
-			<footer>
-				<button
-					id="reset-button"
-					class="reset-button"
-					title="Сбросить все счетчики"
-				>
-					<span class="reset-icon"></span> Сбросить
-				</button>
-			</footer>
+			<footer></footer>
 			<input
 				type="file"
 				id="import-file-input"
 				accept=".json"
 				style="display: none"
 			/>
+		</div>
+
+		<div id="settings-modal" class="modal">
+			<div class="modal__content">
+				<div class="modal__header">
+					<h2 class="modal__title">Настройки</h2>
+					<button id="close-modal" class="modal__close" title="Закрыть">
+						&times;
+					</button>
+				</div>
+				<div class="modal__body">
+					<div class="modal-buttons">
+						<button
+							id="export-button"
+							class="modal__button modal__button--export"
+							title="Экспортировать данные"
+						>
+							<img
+								src="icons/export-icon.png"
+								alt="Экспорт"
+								class="button-icon"
+							/>
+							Экспорт
+						</button>
+						<button
+							id="import-button"
+							class="modal__button modal__button--import"
+							title="Импортировать данные"
+						>
+							<img
+								src="icons/import-icon.png"
+								alt="Импорт"
+								class="button-icon"
+							/>
+							Импорт
+						</button>
+					</div>
+					<div class="reset-container">
+						<button
+							id="reset-button"
+							class="modal__button modal__button--reset"
+							title="Сбросить все счетчики"
+						>
+							<span class="reset-icon"></span> Сбросить
+						</button>
+					</div>
+					<div class="language-selection">
+						<label for="language-select">
+							<img
+								src="icons/globe-icon.png"
+								alt="Язык"
+								class="language-icon"
+							/>
+							Выберите язык:
+						</label>
+						<select id="language-select">
+							<option value="ru">Русский</option>
+							<option value="en">English</option>
+						</select>
+					</div>
+				</div>
+			</div>
 		</div>
 		<script src="popup.js"></script>
 	</body>
