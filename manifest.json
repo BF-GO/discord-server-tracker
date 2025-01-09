@@ -1,9 +1,9 @@
 {
 	"manifest_version": 3,
 	"name": "Discord Server Tracker",
-	"version": "2.4.6",
-	"description": "Server Tracker is a handy browser extension that helps you track servers on server-discord.com and myserver.gg. It allows you to save visit history, count clicks, and quickly find the servers you need.",
-	"permissions": ["storage", "activeTab", "scripting"],
+	"version": "2.4.8",
+	"description": "Browser extension to track servers on server-discord.com and myserver.gg, save history, and count clicks.",
+	"permissions": ["storage"],
 	"background": {
 		"service_worker": "background.js"
 	},
