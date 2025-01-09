@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 		const response = await fetch(`locales/${language}.json`);
 		if (!response.ok) {
 			throw new Error(
-				`Не удалось загрузить файл переводов для языка: ${language}`
+				`Failed to load translations file for language: ${language}`
 			);
 		}
 		const translations = await response.json();
@@ -47,25 +47,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 	}
 
 	function updateUILanguageElements() {
-		const elements = document.querySelectorAll('[data-i18n-key]');
-		elements.forEach((el) => {
+		console.log('Updating language elements...');
+		console.log('Current translations:', currentTranslations);
+
+		document.querySelectorAll('[data-i18n-key]').forEach((el) => {
 			const key = el.getAttribute('data-i18n-key');
-			if (currentTranslations[key]) {
-				el.textContent = currentTranslations[key];
+			if (key && currentTranslations[key]) {
+				if (el.tagName === 'INPUT' && el.type === 'text') {
+					el.setAttribute('placeholder', currentTranslations[key]);
+				} else {
+					el.textContent = currentTranslations[key];
+				}
 			}
 		});
-		if (searchInput && currentTranslations['searchPlaceholder']) {
-			searchInput.setAttribute(
-				'placeholder',
-				currentTranslations['searchPlaceholder']
-			);
-		}
+
+		document.querySelectorAll('[title][data-i18n-key]').forEach((el) => {
+			const key = el.getAttribute('data-i18n-key');
+			if (key && currentTranslations[key]) {
+				el.setAttribute('title', currentTranslations[key]);
+			}
+		});
+
+		document.querySelectorAll('.server-count').forEach((el) => {
+			const countText = el.textContent.replace(/\D/g, '');
+			el.textContent = `${
+				currentTranslations['clicks'] || 'Нажатий'
+			}: ${countText}`;
+		});
 	}
 
 	async function updateUILanguage(language) {
 		try {
 			currentTranslations = await loadTranslations(language);
 			updateUILanguageElements();
+			renderServerList(searchInput.value.trim().toLowerCase());
 		} catch (error) {
 			console.error(error);
 		}
@@ -117,7 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			filteredServers = [...servers];
 			currentPage = 1;
 			calculateTotalPages();
-			renderServerList();
+			renderServerList(searchInput.value.trim().toLowerCase());
 		} catch (error) {
 			console.error(error);
 		}
@@ -414,12 +429,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 	settingsButton.addEventListener('click', () => {
 		settingsModal.style.display = 'flex';
 	});
+
+	function resetResetButtonStyles() {
+		resetButton.style.position = '';
+		resetButton.style.left = '';
+		resetButton.style.top = '';
+		resetButton.style.borderRadius = '';
+		resetButton.style.clipPath = '';
+		resetButton.style.width = '';
+		resetButton.style.height = '';
+		resetButton.style.opacity = '';
+		resetButton.style.transform = '';
+		resetButton.style.transition = '';
+	}
+
 	closeModal.addEventListener('click', () => {
 		settingsModal.style.display = 'none';
+		resetResetButtonStyles();
 	});
+
 	window.addEventListener('click', (event) => {
 		if (event.target === settingsModal) {
 			settingsModal.style.display = 'none';
+			resetResetButtonStyles();
 		}
 	});
 
@@ -429,14 +461,93 @@ document.addEventListener('DOMContentLoaded', async () => {
 			console.log('Выбранный язык:', selectedLanguage);
 			settingsModal.style.display = 'none';
 			updateUILanguage(selectedLanguage);
+			resetResetButtonStyles();
 		});
 	});
 
-	resetButton.addEventListener('click', resetCounters);
+	function getRandomShape() {
+		const shapes = [
+			'50%',
+			'0',
+			'polygon(50% 0%, 0% 100%, 100% 100%)',
+			'polygon(50% 0%, 0% 75%, 25% 75%, 0% 100%, 100% 100%, 75% 75%, 100% 75%)',
+			'polygon(20% 0%, 80% 0%, 100% 50%, 80% 100%, 20% 100%, 0% 50%)',
+			'polygon(50% 0%, 100% 25%, 75% 100%, 25% 100%, 0% 25%)',
+			'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)',
+		];
+		return shapes[Math.floor(Math.random() * shapes.length)];
+	}
+
+	function getRandomSize() {
+		return Math.floor(Math.random() * 60) + 40 + 'px';
+	}
+
+	function getRandomPosition(container) {
+		const containerRect = container.getBoundingClientRect();
+		const maxX = containerRect.width - 100;
+		const maxY = containerRect.height - 100;
+		return {
+			x: Math.random() * maxX,
+			y: Math.random() * maxY,
+		};
+	}
+
+	function moveButtonRandomlyAndChangeForm() {
+		const container = document.querySelector('.modal__content');
+		if (!container) return;
+
+		const { x, y } = getRandomPosition(container);
+
+		resetButton.style.position = 'absolute';
+		resetButton.style.left = x + 'px';
+		resetButton.style.top = y + 'px';
+
+		resetButton.style.borderRadius = '0';
+		resetButton.style.clipPath = getRandomShape();
+		resetButton.style.width = getRandomSize();
+		resetButton.style.height = getRandomSize();
+	}
+
+	resetButton.addEventListener('mouseenter', (e) => {
+		if (!e.ctrlKey) {
+			resetButton.style.transition = 'transform 0.3s ease-in-out';
+			resetButton.style.transform = `rotate(${Math.random() * 360}deg)`;
+		}
+	});
+
+	resetButton.addEventListener('click', (e) => {
+		if (e.ctrlKey) {
+			resetCounters();
+		} else {
+			resetButton.style.opacity = '0';
+			setTimeout(() => {
+				const container = document.querySelector('.modal__content');
+				if (!container) return;
+				const { x, y } = getRandomPosition(container);
+				resetButton.style.left = x + 'px';
+				resetButton.style.top = y + 'px';
+				resetButton.style.opacity = '1';
+				moveButtonRandomlyAndChangeForm();
+			}, 500);
+		}
+	});
+
+	resetButton.addEventListener('mousemove', (e) => {
+		if (!e.ctrlKey) {
+			const rect = resetButton.getBoundingClientRect();
+			const distance = Math.hypot(
+				e.clientX - (rect.left + rect.width / 2),
+				e.clientY - (rect.top + rect.height / 2)
+			);
+			if (distance < 50) {
+				moveButtonRandomlyAndChangeForm();
+			}
+		}
+	});
 
 	let savedLanguage = await new Promise((resolve) => {
 		chrome.storage.local.get('language', (data) => {
-			resolve(data.language || 'ru');
+			resolve(data.language || 'en');
 		});
 	});
 	languageSelect.value = savedLanguage;

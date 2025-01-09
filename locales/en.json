@@ -11,10 +11,12 @@
 	"deleteServer": "Delete server",
 	"noServers": "No servers tracked.",
 	"pageInfo": "Page {0} of {1}",
+	"settingsTitle": "Settings",
 	"confirmReset": "Are you sure you want to reset all counters?",
 	"confirmDelete": "Are you sure you want to delete this server from the list?",
 	"exportError": "Failed to export data.",
 	"importSuccess": "Data imported successfully.",
 	"importError": "Failed to import data. Please ensure the file format is correct.",
-	"unknownServer": "Unknown server"
+	"unknownServer": "Unknown server",
+	"resetHint": "Hold the Ctrl key while clicking the reset button to reset all counters."
 }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 	<head>
 		<meta charset="UTF-8" />
 		<title data-i18n="appTitle">Discord Server Tracker</title>
@@ -14,38 +14,43 @@
 			<header>
 				<h1 data-i18n-key="appTitle">Discord Server Tracker</h1>
 				<div class="header-buttons">
-					<button id="settings-button" class="icon-button" title="Настройки">
-						<img
-							src="icons/gear-icon.png"
-							alt="Настройки"
-							class="button-icon"
-						/>
+					<button id="settings-button" class="icon-button" title="Settings">
+						<img src="icons/gear-icon.png" alt="Settings" class="button-icon" />
 					</button>
 				</div>
 			</header>
 			<main>
-				<h2 data-i18n-key="serverListTitle">Список серверов:</h2>
-				<input type="text" id="search-input" placeholder="Поиск сервера..." />
+				<h2 data-i18n-key="serverListTitle">Server List:</h2>
+				<input
+					type="text"
+					id="search-input"
+					placeholder="Search for a server..."
+					data-i18n-key="searchPlaceholder"
+				/>
 				<ul id="server-list"></ul>
 				<div id="pagination" class="pagination">
 					<button
 						id="prev-page"
 						class="pagination-button"
-						title="Предыдущая страница"
+						title="Previous page"
 					>
 						&larr;
 					</button>
-					<span id="page-info">Страница 1 из 1</span>
-					<button
-						id="next-page"
-						class="pagination-button"
-						title="Следующая страница"
-					>
+					<span id="page-info">Page 1 of 1</span>
+					<button id="next-page" class="pagination-button" title="Next page">
 						&rarr;
 					</button>
 				</div>
 			</main>
-			<footer></footer>
+			<footer>
+				<div class="contact-container">
+					<a href="mailto:26bfgo@gmail.com" class="contact-link">Contact me</a>
+					<span class="tooltip">
+						If you have any suggestions or feature requests for this extension,
+						feel free to email me at 26bfgo@gmail.com.
+					</span>
+				</div>
+			</footer>
 			<input
 				type="file"
 				id="import-file-input"
@@ -57,8 +62,8 @@
 		<div id="settings-modal" class="modal">
 			<div class="modal__content">
 				<div class="modal__header">
-					<h2 class="modal__title" data-i18n-key="settingsTitle">Настройки</h2>
-					<button id="close-modal" class="modal__close" title="Закрыть">
+					<h2 class="modal__title" data-i18n-key="settingsTitle">Settings</h2>
+					<button id="close-modal" class="modal__close" title="Close">
 						&times;
 					</button>
 				</div>
@@ -67,50 +72,55 @@
 						<button
 							id="export-button"
 							class="modal__button modal__button--export"
-							title="Экспортировать данные"
+							title="Export data"
 						>
 							<img
 								src="icons/export-icon.png"
-								alt="Экспорт"
+								alt="Export"
 								class="button-icon"
 							/>
-							<span data-i18n-key="export">Экспорт</span>
+							<span data-i18n-key="export">Export</span>
 						</button>
 						<button
 							id="import-button"
 							class="modal__button modal__button--import"
-							title="Импортировать данные"
+							title="Import data"
 						>
 							<img
 								src="icons/import-icon.png"
-								alt="Импорт"
+								alt="Import"
 								class="button-icon"
 							/>
-							<span data-i18n-key="import">Импорт</span>
+							<span data-i18n-key="import">Import</span>
 						</button>
 					</div>
 					<div class="reset-container">
+						<p class="reset-hint" data-i18n-key="resetHint">
+							Hold the Ctrl key while clicking the reset button to reset all
+							counters.
+						</p>
 						<button
 							id="reset-button"
 							class="modal__button modal__button--reset"
-							title="Сбросить все счетчики"
+							title="Reset all counters"
 						>
 							<span class="reset-icon"></span>
-							<span data-i18n-key="reset">Сбросить</span>
+							<span data-i18n-key="reset">Reset</span>
 						</button>
 					</div>
+
 					<div class="language-selection">
 						<label for="language-select">
 							<img
 								src="icons/globe-icon.png"
-								alt="Язык"
+								alt="Language"
 								class="language-icon"
 							/>
-							<span data-i18n-key="chooseLanguage">Выберите язык:</span>
+							<span data-i18n-key="chooseLanguage">Choose language:</span>
 						</label>
 						<select id="language-select">
 							<option value="ru">Русский</option>
-							<option value="en">English</option>
+							<option value="en" selected>English</option>
 						</select>
 					</div>
 				</div>

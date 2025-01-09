@@ -3,6 +3,7 @@
 console.log('Background script started.');
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+	chrome.storage.local.set({ language: 'en' });
 	if (request.action === 'getStorage') {
 		const keys = request.keys;
 		chrome.storage.local.get(keys, (result) => {

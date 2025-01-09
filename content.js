@@ -28,9 +28,7 @@
 				return link.getAttribute('href').substring(1);
 			}
 		} else if (currentSite.includes('myserver.gg')) {
-			const joinLink = block.querySelector(
-				'td.join_link a[href^="/"][title="Join this server"]'
-			);
+			const joinLink = block.querySelector('td.join_link a[href^="/"]');
 			if (joinLink) {
 				return joinLink.getAttribute('href').substring(1).split('/')[0];
 			}

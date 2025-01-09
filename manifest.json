@@ -1,8 +1,8 @@
 {
 	"manifest_version": 3,
 	"name": "Discord Server Tracker",
-	"version": "2.3.4",
-	"description": "Отслеживает нажатия кнопки 'Вступить' на https://server-discord.com/ и отображает количество нажатий.",
+	"version": "2.4.6",
+	"description": "Server Tracker is a handy browser extension that helps you track servers on server-discord.com and myserver.gg. It allows you to save visit history, count clicks, and quickly find the servers you need.",
 	"permissions": ["storage", "activeTab", "scripting"],
 	"background": {
 		"service_worker": "background.js"
