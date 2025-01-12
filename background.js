@@ -1,9 +1,14 @@
-// background.js
-
 console.log('Background script started.');
 
+chrome.runtime.onInstalled.addListener(() => {
+	chrome.storage.local.get('language', (data) => {
+		if (!data.language) {
+			chrome.storage.local.set({ language: 'en' });
+		}
+	});
+});
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-	chrome.storage.local.set({ language: 'en' });
 	if (request.action === 'getStorage') {
 		const keys = request.keys;
 		chrome.storage.local.get(keys, (result) => {
