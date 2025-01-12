@@ -26,9 +26,13 @@
 				return link.getAttribute('href').substring(1);
 			}
 		} else if (currentSite.includes('myserver.gg')) {
-			const joinLink = block.querySelector('td.join_link a[href^="/"]');
+			const joinLink = block.querySelector('td.join_link a[href*="/join"]');
 			if (joinLink) {
-				return joinLink.getAttribute('href').substring(1).split('/')[0];
+				let href = joinLink.getAttribute('href');
+				href = href.replace(/^\/ru\//, '/');
+				const parts = href.split('/');
+				// Формат ожидается: "/<id>/
+				return parts.length > 1 ? parts[1] : null;
 			}
 		}
 		return null;
@@ -61,9 +65,12 @@
 				: null;
 		} else if (currentSite.includes('myserver.gg')) {
 			const mainLink = block.querySelector('.servers_info a[href^="/"]');
-			return mainLink
-				? `https://myserver.gg${mainLink.getAttribute('href')}`
-				: null;
+			if (mainLink) {
+				let href = mainLink.getAttribute('href');
+				href = href.replace(/^\/ru\//, '/');
+				return `https://myserver.gg${href}`;
+			}
+			return null;
 		}
 		return null;
 	}
@@ -78,11 +85,14 @@
 				: null;
 		} else if (currentSite.includes('myserver.gg')) {
 			const joinLink = block.querySelector(
-				'td.join_link a[href^="/"][target="_blank"]'
+				'td.join_link a.btn.btn-primary.btn-xs'
 			);
-			return joinLink
-				? `https://myserver.gg${joinLink.getAttribute('href')}`
-				: null;
+			if (joinLink) {
+				let href = joinLink.getAttribute('href');
+				href = href.replace(/^\/ru\//, '/');
+				return `https://myserver.gg${href}`;
+			}
+			return null;
 		}
 		return null;
 	}
@@ -111,10 +121,10 @@
 			chrome.runtime.sendMessage(message, (response) => {
 				if (chrome.runtime.lastError) {
 					reject(new Error(chrome.runtime.lastError.message));
-				} else if (response.error) {
+				} else if (response && response.error) {
 					reject(new Error(response.error));
 				} else {
-					resolve(response.data || response.success);
+					resolve(response ? response.data || response.success : null);
 				}
 			});
 		});
@@ -136,7 +146,7 @@
 				joinButton = block.querySelector('.server__header__label-join__button');
 			} else if (currentSite.includes('myserver.gg')) {
 				joinButton = block.querySelector(
-					'td.join_link a[href^="/"][title="Join this server"]'
+					'td.join_link a.btn.btn-primary.btn-xs'
 				);
 			}
 
@@ -181,7 +191,7 @@
 				);
 			} else if (currentSite.includes('myserver.gg')) {
 				joinButton = event.target.closest(
-					'td.join_link a[href^="/"][title="Join this server"]'
+					'td.join_link a.btn.btn-primary.btn-xs'
 				);
 			}
 

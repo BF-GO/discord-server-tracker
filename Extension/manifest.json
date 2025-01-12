@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "Discord Server Tracker",
-	"version": "2.6.2",
+	"version": "2.6.3",
 	"description": "Browser extension to track servers on server-discord.com and myserver.gg, save history, and count clicks.",
 	"permissions": ["storage"],
 	"background": {
