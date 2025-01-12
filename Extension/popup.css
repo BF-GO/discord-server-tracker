@@ -188,8 +188,8 @@ h2 {
 	padding: var(--tooltip-padding);
 	position: absolute;
 	bottom: 120%;
-	left: 170%;
-	transform: translateX(-50%);
+	left: 25%;
+	transform: none;
 	transition: opacity 0.2s, visibility 0.2s;
 	z-index: 10;
 	font-size: var(--tooltip-font-size);
@@ -201,10 +201,9 @@ h2 {
 	content: '';
 	position: absolute;
 	top: 100%;
-	left: 20%;
+	left: 10px;
 	transform: translateX(-50%);
-	border-width: var(--tooltip-arrow-size) var(--tooltip-arrow-size) 0
-		var(--tooltip-arrow-size);
+	border-width: var(--tooltip-arrow-size);
 	border-style: solid;
 	border-color: var(--tooltip-bg-color) transparent transparent transparent;
 }

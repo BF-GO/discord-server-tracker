@@ -193,8 +193,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 				const tooltip = document.createElement('div');
 				tooltip.className = 'custom-tooltip';
-
 				if (server.history && server.history.length > 0) {
+					tooltip.classList.add('tooltip-dates');
 					const sortedHistory = [...server.history].sort(
 						(a, b) => new Date(b) - new Date(a)
 					);
@@ -211,6 +211,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 						tooltip.appendChild(entry);
 					});
 				} else {
+					tooltip.classList.add('tooltip-text');
 					const entry = document.createElement('div');
 					entry.textContent =
 						currentTranslations['noHistory'] || 'No visit history';
@@ -305,23 +306,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 		try {
 			const key = `${site}_${serverId}`;
 			const result = await sendMessage({ action: 'getStorage', keys: [key] });
-			if (result && result[key]) {
-				const existingHistory = result[key].history || [];
-				existingHistory.unshift(currentDate);
-				if (existingHistory.length > 5) {
-					existingHistory.length = 5;
+			let serverData = result && result[key] ? result[key] : null;
+
+			let existingHistory = [];
+			let newCount = 1;
+			if (serverData) {
+				existingHistory = serverData.history || [];
+				newCount = (serverData.count || 0) + 1;
+				if (typeof serverData.lastVisited !== 'number') {
+					serverData.lastVisited = 0;
 				}
-				const updatedData = {
-					...result[key],
-					lastVisited: Date.now(),
-					history: existingHistory,
-				};
-				await sendMessage({
-					action: 'setStorage',
-					data: { [key]: updatedData },
-				});
-				loadServers();
+			} else {
+				serverData = {};
 			}
+
+			existingHistory.unshift(currentDate);
+			if (existingHistory.length > 5) {
+				existingHistory.length = 5;
+			}
+
+			const updatedData = {
+				...serverData,
+				count: newCount,
+				lastVisited: Date.now(),
+				history: existingHistory,
+			};
+
+			await sendMessage({
+				action: 'setStorage',
+				data: { [key]: updatedData },
+			});
+			loadServers();
 		} catch (error) {
 			console.error(error);
 		}
