@@ -1,5 +1,3 @@
-// content.js
-
 (function () {
 	let isActive = true;
 	const currentSite = window.location.hostname;
@@ -80,7 +78,7 @@
 				: null;
 		} else if (currentSite.includes('myserver.gg')) {
 			const joinLink = block.querySelector(
-				'td.join_link a[href^="/"][title="Join this server"]'
+				'td.join_link a[href^="/"][target="_blank"]'
 			);
 			return joinLink
 				? `https://myserver.gg${joinLink.getAttribute('href')}`
@@ -231,18 +229,26 @@
 				keys: [key],
 			});
 			let serverData = result ? result[key] : null;
+			const currentDate = new Date().toISOString();
+
 			if (!serverData) {
 				serverData = {
 					count: 0,
 					name: serverName,
 					mainLink: serverMainLink,
 					joinLink: serverJoinLink,
-					lastVisited: Date.now(),
+					history: [currentDate],
 				};
 			} else {
-				serverData.lastVisited = Date.now();
+				if (!serverData.history) {
+					serverData.history = [];
+				}
+				serverData.history.unshift(currentDate);
+				if (serverData.history.length > 5) {
+					serverData.history = serverData.history.slice(0, 5);
+				}
 			}
-			serverData.count += 1;
+			serverData.count = (serverData.count || 0) + 1;
 
 			await sendMessage({
 				action: 'setStorage',

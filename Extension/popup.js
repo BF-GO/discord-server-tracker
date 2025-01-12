@@ -1,4 +1,3 @@
-// popup.js
 document.addEventListener('DOMContentLoaded', async () => {
 	const resetButton = document.getElementById('reset-button');
 	const serverList = document.getElementById('server-list');
@@ -122,6 +121,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 								'Неизвестный сервер',
 							mainLink: mainLink || `${getSiteURL(site)}${serverId}`,
 							joinLink: joinLink || `${getSiteURL(site)}${serverId}/join`,
+							history: serverData.history || [],
 							lastVisited: lastVisited,
 						});
 					}
@@ -182,6 +182,43 @@ document.addEventListener('DOMContentLoaded', async () => {
 				const listItem = document.createElement('li');
 				listItem.className = 'server-item';
 
+				const iconContainer = document.createElement('div');
+				iconContainer.className = 'icon-container';
+
+				const icon = document.createElement('img');
+				icon.src = 'icons/book.png';
+				icon.alt = 'Server Icon';
+				icon.className = 'server-icon';
+				iconContainer.appendChild(icon);
+
+				const tooltip = document.createElement('div');
+				tooltip.className = 'custom-tooltip';
+
+				if (server.history && server.history.length > 0) {
+					const sortedHistory = [...server.history].sort(
+						(a, b) => new Date(b) - new Date(a)
+					);
+
+					sortedHistory.forEach((dateStr, index) => {
+						const entry = document.createElement('div');
+						entry.textContent = new Date(dateStr).toLocaleString();
+						entry.style.whiteSpace = 'nowrap';
+						if (index < sortedHistory.length - 1) {
+							entry.style.borderBottom = '1px solid rgba(255, 255, 255, 0.2)';
+							entry.style.paddingBottom = '4px';
+							entry.style.marginBottom = '4px';
+						}
+						tooltip.appendChild(entry);
+					});
+				} else {
+					const entry = document.createElement('div');
+					entry.textContent =
+						currentTranslations['noHistory'] || 'No visit history';
+					entry.style.whiteSpace = 'nowrap';
+					tooltip.appendChild(entry);
+				}
+				iconContainer.appendChild(tooltip);
+
 				const nameLink = document.createElement('a');
 				nameLink.className = 'server-name';
 				nameLink.href = server.mainLink;
@@ -217,6 +254,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 					deleteServer(server.site, server.id);
 				});
 
+				listItem.appendChild(iconContainer);
 				listItem.appendChild(nameLink);
 				listItem.appendChild(countSpan);
 				listItem.appendChild(linkElement);
@@ -263,12 +301,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 	}
 
 	async function updateLastVisited(site, serverId) {
-		const timestamp = Date.now();
+		const currentDate = new Date().toISOString();
 		try {
 			const key = `${site}_${serverId}`;
 			const result = await sendMessage({ action: 'getStorage', keys: [key] });
 			if (result && result[key]) {
-				const updatedData = { ...result[key], lastVisited: timestamp };
+				const existingHistory = result[key].history || [];
+				existingHistory.unshift(currentDate);
+				if (existingHistory.length > 5) {
+					existingHistory.length = 5;
+				}
+				const updatedData = {
+					...result[key],
+					lastVisited: Date.now(),
+					history: existingHistory,
+				};
 				await sendMessage({
 					action: 'setStorage',
 					data: { [key]: updatedData },
