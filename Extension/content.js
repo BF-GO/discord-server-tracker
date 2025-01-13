@@ -31,7 +31,6 @@
 				let href = joinLink.getAttribute('href');
 				href = href.replace(/^\/ru\//, '/');
 				const parts = href.split('/');
-				// Формат ожидается: "/<id>/
 				return parts.length > 1 ? parts[1] : null;
 			}
 		}
@@ -240,25 +239,28 @@
 			});
 			let serverData = result ? result[key] : null;
 			const currentDate = new Date().toISOString();
+			const currentTime = Date.now();
 
 			if (!serverData) {
 				serverData = {
-					count: 0,
+					count: 1,
 					name: serverName,
 					mainLink: serverMainLink,
 					joinLink: serverJoinLink,
 					history: [currentDate],
+					lastVisited: currentTime,
 				};
 			} else {
+				serverData.count = (serverData.count || 0) + 1;
 				if (!serverData.history) {
 					serverData.history = [];
 				}
 				serverData.history.unshift(currentDate);
 				if (serverData.history.length > 5) {
-					serverData.history = serverData.history.slice(0, 5);
+					serverData.history.length = 5;
 				}
+				serverData.lastVisited = currentTime;
 			}
-			serverData.count = (serverData.count || 0) + 1;
 
 			await sendMessage({
 				action: 'setStorage',

@@ -46,9 +46,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 	}
 
 	function updateUILanguageElements() {
-		console.log('Updating language elements...');
-		console.log('Current translations:', currentTranslations);
-
 		document.querySelectorAll('[data-i18n-key]').forEach((el) => {
 			const key = el.getAttribute('data-i18n-key');
 			if (key && currentTranslations[key]) {
@@ -303,38 +300,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 	async function updateLastVisited(site, serverId) {
 		const currentDate = new Date().toISOString();
+		const currentTime = Date.now();
 		try {
 			const key = `${site}_${serverId}`;
 			const result = await sendMessage({ action: 'getStorage', keys: [key] });
 			let serverData = result && result[key] ? result[key] : null;
 
-			let existingHistory = [];
-			let newCount = 1;
-			if (serverData) {
-				existingHistory = serverData.history || [];
-				newCount = (serverData.count || 0) + 1;
-				if (typeof serverData.lastVisited !== 'number') {
-					serverData.lastVisited = 0;
-				}
+			if (!serverData) {
+				serverData = {
+					count: 1,
+					history: [currentDate],
+					lastVisited: currentTime,
+				};
 			} else {
-				serverData = {};
+				serverData.count = (serverData.count || 0) + 1;
+				if (!serverData.history) {
+					serverData.history = [];
+				}
+				serverData.history.unshift(currentDate);
+				if (serverData.history.length > 5) {
+					serverData.history.length = 5;
+				}
+				serverData.lastVisited = currentTime;
 			}
-
-			existingHistory.unshift(currentDate);
-			if (existingHistory.length > 5) {
-				existingHistory.length = 5;
-			}
-
-			const updatedData = {
-				...serverData,
-				count: newCount,
-				lastVisited: Date.now(),
-				history: existingHistory,
-			};
 
 			await sendMessage({
 				action: 'setStorage',
-				data: { [key]: updatedData },
+				data: { [key]: serverData },
 			});
 			loadServers();
 		} catch (error) {
@@ -520,7 +512,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 	languageSelect.addEventListener('change', (event) => {
 		const selectedLanguage = event.target.value;
 		chrome.storage.local.set({ language: selectedLanguage }, () => {
-			console.log('Выбранный язык:', selectedLanguage);
 			settingsModal.style.display = 'none';
 			updateUILanguage(selectedLanguage);
 			resetResetButtonStyles();
