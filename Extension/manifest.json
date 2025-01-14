@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "Discord Server Tracker",
-	"version": "2.6.4",
+	"version": "2.7.4",
 	"description": "Browser extension to track servers on server-discord.com and myserver.gg, save history, and count clicks.",
 	"permissions": ["storage"],
 	"background": {
@@ -17,7 +17,11 @@
 	},
 	"content_scripts": [
 		{
-			"matches": ["https://server-discord.com/*", "https://myserver.gg/*"],
+			"matches": [
+				"https://server-discord.com/*",
+				"https://myserver.gg/*",
+				"https://discordserver.info/*"
+			],
 			"js": ["content.js"],
 			"css": ["styles.css"]
 		}

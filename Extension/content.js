@@ -11,6 +11,8 @@
 		sitePrefix = 'server-discord.com';
 	} else if (currentSite.includes('myserver.gg')) {
 		sitePrefix = 'myserver.gg';
+	} else if (currentSite.includes('discordserver.info')) {
+		sitePrefix = 'discordserver.info';
 	} else {
 		return;
 	}
@@ -33,6 +35,11 @@
 				const parts = href.split('/');
 				return parts.length > 1 ? parts[1] : null;
 			}
+		} else if (currentSite.includes('discordserver.info')) {
+			const h3Link = block.querySelector(
+				'h3 a[href^="https://discordserver.info/"]'
+			);
+			return h3Link ? h3Link.getAttribute('href').split('/').pop() : null;
 		}
 		return null;
 	}
@@ -50,6 +57,11 @@
 			return nameElement
 				? nameElement.textContent.trim()
 				: 'Неизвестный сервер';
+		} else if (currentSite.includes('discordserver.info')) {
+			const h3Link = block.querySelector(
+				'h3 a[href^="https://discordserver.info/"]'
+			);
+			return h3Link ? h3Link.textContent.trim() : 'Неизвестный сервер';
 		}
 		return 'Неизвестный сервер';
 	}
@@ -70,6 +82,11 @@
 				return `https://myserver.gg${href}`;
 			}
 			return null;
+		} else if (currentSite.includes('discordserver.info')) {
+			const h3Link = block.querySelector(
+				'h3 a[href^="https://discordserver.info/"]'
+			);
+			return h3Link ? h3Link.getAttribute('href') : null;
 		}
 		return null;
 	}
@@ -92,6 +109,9 @@
 				return `https://myserver.gg${href}`;
 			}
 			return null;
+		} else if (currentSite.includes('discordserver.info')) {
+			const buttonLink = block.querySelector('.buttons a[href*="/invite"]');
+			return buttonLink ? buttonLink.getAttribute('href') : null;
 		}
 		return null;
 	}
@@ -137,6 +157,8 @@
 			serverBlocks = document.querySelectorAll('.guildApp__guild');
 		} else if (currentSite.includes('myserver.gg')) {
 			serverBlocks = document.querySelectorAll('table.servers tbody tr.server');
+		} else if (currentSite.includes('discordserver.info')) {
+			serverBlocks = document.querySelectorAll('section.server');
 		}
 
 		for (const block of serverBlocks) {
@@ -147,6 +169,8 @@
 				joinButton = block.querySelector(
 					'td.join_link a.btn.btn-primary.btn-xs'
 				);
+			} else if (currentSite.includes('discordserver.info')) {
+				joinButton = block.querySelector('.buttons a[href*="/invite"]');
 			}
 
 			if (joinButton) {
@@ -192,6 +216,8 @@
 				joinButton = event.target.closest(
 					'td.join_link a.btn.btn-primary.btn-xs'
 				);
+			} else if (currentSite.includes('discordserver.info')) {
+				joinButton = event.target.closest('.buttons a[href*="/invite"]');
 			}
 
 			if (joinButton) {
@@ -200,6 +226,8 @@
 					serverBlock = joinButton.closest('.guildApp__guild');
 				} else if (currentSite.includes('myserver.gg')) {
 					serverBlock = joinButton.closest('tr.server');
+				} else if (currentSite.includes('discordserver.info')) {
+					serverBlock = joinButton.closest('section.server');
 				}
 
 				if (!serverBlock) return;
@@ -290,6 +318,10 @@
 								matches =
 									node.matches('table.servers') ||
 									node.querySelectorAll('table.servers').length > 0;
+							} else if (currentSite.includes('discordserver.info')) {
+								matches =
+									node.matches('section.server') ||
+									node.querySelectorAll('section.server').length > 0;
 							}
 							if (matches) {
 								needsRefresh = true;
