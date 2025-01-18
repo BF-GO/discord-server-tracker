@@ -82,6 +82,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 		}
 	}
 
+	const dropdownToggle = document.querySelector('.dropdown-toggle');
+	const dropdownIcon = document.querySelector('.dropdown-icon');
+	const dropdownMenu = document.querySelector('.dropdown-menu');
+
+	dropdownToggle.addEventListener('click', () => {
+		const expanded =
+			dropdownToggle.getAttribute('aria-expanded') === 'true' || false;
+		dropdownToggle.setAttribute('aria-expanded', !expanded);
+		dropdownMenu.style.display = expanded ? 'none' : 'block';
+
+		dropdownIcon.classList.add('animate-bounce');
+		dropdownIcon.addEventListener(
+			'animationend',
+			() => {
+				dropdownIcon.classList.remove('animate-bounce');
+			},
+			{ once: true }
+		);
+	});
+
+	document.addEventListener('click', (event) => {
+		if (
+			!dropdownToggle.contains(event.target) &&
+			!dropdownMenu.contains(event.target)
+		) {
+			dropdownToggle.setAttribute('aria-expanded', 'false');
+			dropdownMenu.style.display = 'none';
+		}
+	});
+
 	async function loadServers() {
 		try {
 			const result = await sendMessage({ action: 'getAllStorage' });

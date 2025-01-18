@@ -20,7 +20,40 @@
 				</div>
 			</header>
 			<main>
-				<h2 data-i18n-key="serverListTitle">Server List:</h2>
+				<div class="server-list-header">
+					<h2 data-i18n-key="serverListTitle">Server List:</h2>
+					<div class="dropdown-container">
+						<button class="dropdown-toggle" aria-expanded="false">
+							<img
+								src="icons/info.png"
+								alt="Expand list of sites"
+								class="dropdown-icon"
+							/>
+						</button>
+						<ul class="dropdown-menu">
+							<li class="dropdown-header" data-i18n-key="supportedSitesTitle">
+								Supported Sites:
+							</li>
+							<li class="dropdown-divider"></li>
+							<li>
+								<a href="https://server-discord.com" target="_blank"
+									>server-discord.com</a
+								>
+							</li>
+							<li>
+								<a href="https://myserver.gg" target="_blank">myserver.gg</a>
+							</li>
+							<li>
+								<a href="https://disboard.org/" target="_blank">disboard.org</a>
+							</li>
+							<li>
+								<a href="https://discordserver.info/" target="_blank"
+									>discordserver.info</a
+								>
+							</li>
+						</ul>
+					</div>
+				</div>
 				<input
 					type="text"
 					id="search-input"

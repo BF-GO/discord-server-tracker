@@ -19,5 +19,6 @@
 	"importError": "Failed to import data. Please ensure the file format is correct.",
 	"unknownServer": "Unknown server",
 	"resetHint": "Hold the Ctrl key while clicking the reset button to reset all counters.",
-	"noHistory": "No visit history"
+	"noHistory": "No visit history",
+	"supportedSitesTitle": "Supported Sites:"
 }

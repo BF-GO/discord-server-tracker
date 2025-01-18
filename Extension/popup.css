@@ -103,9 +103,6 @@ main {
 
 h2 {
 	font-size: 16px;
-	margin-bottom: 10px;
-	border-bottom: 1px solid #7289da;
-	padding-bottom: 5px;
 }
 
 #search-input {
@@ -607,4 +604,104 @@ html::-webkit-scrollbar-thumb:hover {
 	background-color: var(--input-focus-bg);
 	outline: none;
 	border: 1px solid var(--button-color);
+}
+
+.dropdown-container {
+	position: relative;
+	display: inline-block;
+}
+
+.dropdown-toggle {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 0;
+}
+
+.dropdown-icon {
+	width: 20px;
+	height: 20px;
+	transition: transform 0.3s;
+}
+
+.dropdown-icon.animate-bounce {
+	animation: chaoticBounce 1s ease-out;
+}
+
+@keyframes chaoticBounce {
+	0% {
+		transform: translateY(0) rotate(0deg);
+	}
+	20% {
+		transform: translateY(-15px) rotate(20deg);
+	}
+	40% {
+		transform: translateY(0) rotate(-15deg);
+	}
+	60% {
+		transform: translateY(-10px) rotate(10deg);
+	}
+	80% {
+		transform: translateY(0) rotate(-5deg);
+	}
+	100% {
+		transform: translateY(0) rotate(0deg);
+	}
+}
+
+.dropdown-menu {
+	display: none;
+	position: absolute;
+	right: 0;
+	width: 160px;
+	background-color: var(--server-item-bg);
+	border: 1px solid var(--button-color);
+	border-radius: 5px;
+	list-style: none;
+	padding: 10px;
+	margin-top: 5px;
+	z-index: 100;
+}
+
+.dropdown-menu li {
+	margin: 5px 0;
+}
+
+.dropdown-menu li a {
+	color: var(--text-color);
+	text-decoration: none;
+	transition: color 0.3s;
+}
+
+.dropdown-menu li a:hover {
+	color: var(--link-hover-color);
+}
+
+.dropdown-menu .dropdown-header {
+	font-weight: bold;
+	margin-bottom: 5px;
+	color: var(--link-color);
+	font-size: 15px;
+}
+
+.dropdown-menu .dropdown-divider {
+	height: 1px;
+	background-color: var(--button-color);
+	margin: 5px 0;
+}
+
+.dropdown-toggle[aria-expanded='true'] + .dropdown-menu {
+	display: block;
+}
+
+.dropdown-menu li:not(.dropdown-header) {
+	font-size: 14px;
+}
+
+.server-list-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px solid var(--button-color);
+	margin-bottom: 10px;
 }
