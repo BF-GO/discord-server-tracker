@@ -13,6 +13,8 @@
 		sitePrefix = 'myserver.gg';
 	} else if (currentSite.includes('discordserver.info')) {
 		sitePrefix = 'discordserver.info';
+	} else if (currentSite.includes('disboard.org')) {
+		sitePrefix = 'disboard.org';
 	} else {
 		return;
 	}
@@ -40,6 +42,9 @@
 				'h3 a[href^="https://discordserver.info/"]'
 			);
 			return h3Link ? h3Link.getAttribute('href').split('/').pop() : null;
+		} else if (currentSite.includes('disboard.org')) {
+			const link = block.querySelector('.server-join a[href*="/join/"]');
+			return link ? link.getAttribute('href').split('/').pop() : null;
 		}
 		return null;
 	}
@@ -62,6 +67,9 @@
 				'h3 a[href^="https://discordserver.info/"]'
 			);
 			return h3Link ? h3Link.textContent.trim() : 'Неизвестный сервер';
+		} else if (currentSite.includes('disboard.org')) {
+			const nameLink = block.querySelector('.server-name a');
+			return nameLink ? nameLink.textContent.trim() : 'Неизвестный сервер';
 		}
 		return 'Неизвестный сервер';
 	}
@@ -87,6 +95,13 @@
 				'h3 a[href^="https://discordserver.info/"]'
 			);
 			return h3Link ? h3Link.getAttribute('href') : null;
+		} else if (currentSite.includes('disboard.org')) {
+			const nameLink = block.querySelector(
+				'.server-name a[href^="/ru/server/"]'
+			);
+			return nameLink
+				? `https://disboard.org${nameLink.getAttribute('href')}`
+				: null;
 		}
 		return null;
 	}
@@ -112,6 +127,11 @@
 		} else if (currentSite.includes('discordserver.info')) {
 			const buttonLink = block.querySelector('.buttons a[href*="/invite"]');
 			return buttonLink ? buttonLink.getAttribute('href') : null;
+		} else if (currentSite.includes('disboard.org')) {
+			const joinLink = block.querySelector('.server-join a[href*="/join/"]');
+			return joinLink
+				? `https://disboard.org${joinLink.getAttribute('href')}`
+				: null;
 		}
 		return null;
 	}
@@ -159,6 +179,8 @@
 			serverBlocks = document.querySelectorAll('table.servers tbody tr.server');
 		} else if (currentSite.includes('discordserver.info')) {
 			serverBlocks = document.querySelectorAll('section.server');
+		} else if (currentSite.includes('disboard.org')) {
+			serverBlocks = document.querySelectorAll('.listing-card');
 		}
 
 		for (const block of serverBlocks) {
@@ -171,6 +193,8 @@
 				);
 			} else if (currentSite.includes('discordserver.info')) {
 				joinButton = block.querySelector('.buttons a[href*="/invite"]');
+			} else if (currentSite.includes('disboard.org')) {
+				joinButton = block.querySelector('.server-join a[href*="/join/"]');
 			}
 
 			if (joinButton) {
@@ -218,6 +242,8 @@
 				);
 			} else if (currentSite.includes('discordserver.info')) {
 				joinButton = event.target.closest('.buttons a[href*="/invite"]');
+			} else if (currentSite.includes('disboard.org')) {
+				joinButton = event.target.closest('.server-join a[href*="/join/"]');
 			}
 
 			if (joinButton) {
@@ -228,6 +254,8 @@
 					serverBlock = joinButton.closest('tr.server');
 				} else if (currentSite.includes('discordserver.info')) {
 					serverBlock = joinButton.closest('section.server');
+				} else if (currentSite.includes('disboard.org')) {
+					serverBlock = joinButton.closest('.listing-card');
 				}
 
 				if (!serverBlock) return;
@@ -322,6 +350,10 @@
 								matches =
 									node.matches('section.server') ||
 									node.querySelectorAll('section.server').length > 0;
+							} else if (currentSite.includes('disboard.org')) {
+								matches =
+									node.matches('.listing-card') ||
+									node.querySelectorAll('.listing-card').length > 0;
 							}
 							if (matches) {
 								needsRefresh = true;

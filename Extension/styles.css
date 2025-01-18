@@ -28,3 +28,10 @@ body.myserver #list .servers-shadow .join_link > a.tracked-join-button:hover {
 	color: white !important;
 	transition: none !important;
 }
+
+.listing-card .server-join a.tracked-join-button {
+	background-color: red !important;
+	background-image: none !important;
+	color: white !important;
+	border: none !important;
+}
