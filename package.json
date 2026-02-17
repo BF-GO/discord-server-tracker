@@ -1,8 +1,15 @@
 {
-  "dependencies": {
-    "adm-zip": "^0.5.16"
-  },
-  "scripts": {
-  "build": "node build.js"
-}
+	"name": "discord-server-tracker",
+	"private": true,
+	"scripts": {
+		"dev": "vite build --watch",
+		"build": "vite build",
+		"build:zip": "npm run build && node build.js"
+	},
+	"dependencies": {
+		"adm-zip": "^0.5.16"
+	},
+	"devDependencies": {
+		"vite": "^7.0.0"
+	}
 }

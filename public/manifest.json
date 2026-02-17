@@ -1,0 +1,36 @@
+﻿{
+	"manifest_version": 3,
+	"name": "Discord Server Tracker",
+	"version": "3.0.0",
+	"description": "Track servers on server-discord.com, myserver.gg, discordserver.info, and disboard.org. Save history and count clicks.",
+	"permissions": ["storage"],
+	"background": {
+		"service_worker": "background.js"
+	},
+	"action": {
+		"default_popup": "popup.html",
+		"default_icon": {
+			"16": "icons/icon16.png",
+			"48": "icons/icon48.png",
+			"128": "icons/icon128.png"
+		}
+	},
+	"content_scripts": [
+		{
+			"matches": [
+				"https://server-discord.com/*",
+				"https://myserver.gg/*",
+				"https://discordserver.info/*",
+				"https://disboard.org/*"
+			],
+			"js": ["content.js"],
+			"css": ["styles.css"]
+		}
+	],
+	"icons": {
+		"16": "icons/icon16.png",
+		"48": "icons/icon48.png",
+		"128": "icons/icon128.png"
+	}
+}
+

@@ -1,0 +1,121 @@
+﻿<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title data-i18n-key="appTitle">Discord Server Tracker</title>
+	</head>
+	<body>
+		<div class="popup-container">
+			<header>
+				<h1 data-i18n-key="appTitle">Discord Server Tracker</h1>
+				<div class="header-buttons">
+					<button id="settings-button" class="icon-button" title="Settings">
+						<img src="/icons/gear-icon.png" alt="Settings" class="button-icon" />
+					</button>
+				</div>
+			</header>
+
+			<main>
+				<div class="server-list-header">
+					<h2 data-i18n-key="serverListTitle">List of Servers:</h2>
+					<div class="dropdown-container">
+						<button class="dropdown-toggle" aria-expanded="false" aria-label="Supported sites">
+							<img
+								src="/icons/info.png"
+								alt="Expand list of sites"
+								class="dropdown-icon"
+							/>
+						</button>
+						<ul class="dropdown-menu">
+							<li class="dropdown-header" data-i18n-key="supportedSitesTitle">
+								Supported Sites:
+							</li>
+							<li class="dropdown-divider"></li>
+							<li><a href="https://server-discord.com" target="_blank">server-discord.com</a></li>
+							<li><a href="https://myserver.gg" target="_blank">myserver.gg</a></li>
+							<li><a href="https://disboard.org" target="_blank">disboard.org</a></li>
+							<li><a href="https://discordserver.info" target="_blank">discordserver.info</a></li>
+						</ul>
+					</div>
+				</div>
+
+				<input
+					type="text"
+					id="search-input"
+					placeholder="Search for a server..."
+					data-i18n-key="searchPlaceholder"
+				/>
+
+				<ul id="server-list"></ul>
+
+				<div id="pagination" class="pagination">
+					<button id="prev-page" class="pagination-button" title="Previous page">&larr;</button>
+					<span id="page-info">Page 1 of 1</span>
+					<button id="next-page" class="pagination-button" title="Next page">&rarr;</button>
+				</div>
+			</main>
+
+			<footer>
+				<div class="contact-container">
+					<a href="mailto:26bfgo@gmail.com" class="contact-link">Contact me</a>
+					<span class="tooltip">
+						If you have suggestions or feature requests, email 26bfgo@gmail.com.
+					</span>
+				</div>
+			</footer>
+
+			<input type="file" id="import-file-input" accept=".json" hidden />
+		</div>
+
+		<div id="settings-modal" class="modal">
+			<div class="modal__content">
+				<div class="modal__header">
+					<h2 class="modal__title" data-i18n-key="settingsTitle">Settings</h2>
+					<button id="close-modal" class="modal__close" title="Close">&times;</button>
+				</div>
+
+				<div class="modal__body">
+					<div class="modal-buttons">
+						<button id="export-button" class="modal__button modal__button--export" title="Export data">
+							<img src="/icons/export-icon.png" alt="Export" class="button-icon" />
+							<span data-i18n-key="export">Export</span>
+						</button>
+
+						<button id="import-button" class="modal__button modal__button--import" title="Import data">
+							<img src="/icons/import-icon.png" alt="Import" class="button-icon" />
+							<span data-i18n-key="import">Import</span>
+						</button>
+					</div>
+
+					<div class="reset-container">
+						<p class="reset-hint" data-i18n-key="resetHint">
+							Hold Ctrl while clicking the reset button to reset all counters.
+						</p>
+						<button
+							id="reset-button"
+							class="modal__button modal__button--reset"
+							title="Reset all counters"
+						>
+							<span class="reset-icon"></span>
+							<span data-i18n-key="reset">Reset</span>
+						</button>
+					</div>
+
+					<div class="language-selection">
+						<label for="language-select">
+							<img src="/icons/globe-icon.png" alt="Language" class="language-icon" />
+							<span data-i18n-key="chooseLanguage">Choose language:</span>
+						</label>
+						<select id="language-select">
+							<option value="ru">Русский</option>
+							<option value="en">English</option>
+						</select>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script type="module" src="/src/popup/main.js"></script>
+	</body>
+</html>

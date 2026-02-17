@@ -1,0 +1,37 @@
+/* styles.css */
+
+.tracked-join-button {
+	background-color: red !important;
+	color: white !important;
+	border: none !important;
+	cursor: pointer;
+}
+
+.tracked-join-button .click-count {
+	margin-left: 8px;
+	color: white;
+	font-weight: bold;
+	background-color: rgba(0, 0, 0, 0.5);
+	padding: 2px 6px;
+	border-radius: 12px;
+	font-size: 12px;
+}
+
+body.myserver .tracked-join-button {
+	width: auto !important;
+}
+
+body.myserver #list .servers-shadow .join_link > a.tracked-join-button:hover {
+	background: red !important;
+	background-image: none !important;
+	border: none !important;
+	color: white !important;
+	transition: none !important;
+}
+
+.listing-card .server-join a.tracked-join-button {
+	background-color: red !important;
+	background-image: none !important;
+	color: white !important;
+	border: none !important;
+}
