@@ -20,5 +20,8 @@
 	"unknownServer": "Unknown server",
 	"resetHint": "Hold the Ctrl key while clicking the reset button to reset all counters.",
 	"noHistory": "No visit history",
+	"timeFormat": "Time format:",
+	"timeFormat24": "24-hour",
+	"timeFormat12": "12-hour",
 	"supportedSitesTitle": "Supported Sites:"
 }

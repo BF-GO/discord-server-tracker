@@ -1,7 +1,7 @@
 ﻿{
 	"manifest_version": 3,
 	"name": "Discord Server Tracker",
-	"version": "3.0.0",
+	"version": "3.1.0",
 	"description": "Track servers on server-discord.com, myserver.gg, discordserver.info, and disboard.org. Save history and count clicks.",
 	"permissions": ["storage"],
 	"background": {
@@ -33,4 +33,5 @@
 		"128": "icons/icon128.png"
 	}
 }
+
 

@@ -1,4 +1,4 @@
-﻿import { HISTORY_LIMIT, SITE_BASE_URLS } from './constants.js';
+﻿import { SITE_BASE_URLS } from './constants.js';
 
 function splitStorageKey(storageKey) {
 	const separatorIndex = storageKey.indexOf('_');
@@ -18,8 +18,7 @@ function normalizeHistory(history) {
 	}
 
 	return history
-		.filter((entry) => typeof entry === 'string' && entry.length > 0)
-		.slice(0, HISTORY_LIMIT);
+		.filter((entry) => typeof entry === 'string' && entry.length > 0);
 }
 
 function normalizeLastVisited(lastVisited) {
@@ -157,7 +156,6 @@ export function buildUpdatedServerPayload(existingRecord) {
 	const history = Array.isArray(existingRecord.history) ? [...existingRecord.history] : [];
 
 	history.unshift(new Date(now).toISOString());
-	history.length = HISTORY_LIMIT;
 
 	return {
 		...existingRecord,
@@ -166,3 +164,4 @@ export function buildUpdatedServerPayload(existingRecord) {
 		lastVisited: now,
 	};
 }
+

@@ -56,6 +56,39 @@ function nodeMatchesBlock(node, blockSelector) {
 	return node.matches(blockSelector) || node.querySelector(blockSelector) !== null;
 }
 
+function queryFirst(root, selectors) {
+	for (const selector of selectors) {
+		const element = root.querySelector(selector);
+		if (element) {
+			return element;
+		}
+	}
+
+	return null;
+}
+
+const MYSERVER_BLOCK_SELECTORS = [
+	'table.servers tbody tr.server',
+	'.search-row',
+];
+const MYSERVER_JOIN_SELECTORS = [
+	'td.join_link a.btn.btn-primary.btn-xs',
+	'.search-row__join',
+];
+const MYSERVER_NAME_SELECTORS = ['span.server_name', '.search-row__name'];
+const MYSERVER_MAIN_LINK_SELECTORS = ['.servers_info a[href^="/"]', '.search-row__name[href^="/"]'];
+const MYSERVER_VIEW_LINK_SELECTORS = ['.search-row__buttons a[href^="/"]'];
+
+function extractMyServerIdFromJoinButton(joinButton) {
+	const onclick = joinButton?.getAttribute('onclick');
+	if (!onclick) {
+		return null;
+	}
+
+	const match = onclick.match(/serverJoin\('([^']+)'\)/);
+	return match ? match[1] : null;
+}
+
 const SERVER_DISCORD = {
 	key: 'server-discord.com',
 	matches: (hostname) => hostname.includes('server-discord.com'),
@@ -98,41 +131,62 @@ const SERVER_DISCORD = {
 const MYSERVER = {
 	key: 'myserver.gg',
 	matches: (hostname) => hostname.includes('myserver.gg'),
-	blockSelector: 'table.servers tbody tr.server',
-	joinButtonSelector: 'td.join_link a.btn.btn-primary.btn-xs',
+	blockSelector: MYSERVER_BLOCK_SELECTORS.join(', '),
+	joinButtonSelector: MYSERVER_JOIN_SELECTORS.join(', '),
 	onInit: () => {
 		document.body.classList.add('myserver');
 	},
-	getServerBlocks: () => document.querySelectorAll('table.servers tbody tr.server'),
-	getJoinButton: (serverBlock) =>
-		serverBlock.querySelector('td.join_link a.btn.btn-primary.btn-xs'),
+	getServerBlocks: () => document.querySelectorAll(MYSERVER_BLOCK_SELECTORS.join(', ')),
+	getJoinButton: (serverBlock) => queryFirst(serverBlock, MYSERVER_JOIN_SELECTORS),
 	getJoinButtonFromEvent: (target) =>
-		target.closest('td.join_link a.btn.btn-primary.btn-xs'),
-	getServerBlockFromJoinButton: (joinButton) => joinButton.closest('tr.server'),
-	isRelevantNode: (node) => nodeMatchesBlock(node, 'table.servers tbody tr.server'),
+		target.closest(MYSERVER_JOIN_SELECTORS.join(', ')),
+	getServerBlockFromJoinButton: (joinButton) => joinButton.closest('tr.server, .search-row'),
+	isRelevantNode: (node) => nodeMatchesBlock(node, MYSERVER_BLOCK_SELECTORS.join(', ')),
 	getServerId: (serverBlock) => {
-		const joinLink = serverBlock.querySelector('td.join_link a[href*="/join"]');
-		const href = joinLink?.getAttribute('href');
-		if (!href) {
-			return null;
+		const legacyJoinLink = serverBlock.querySelector('td.join_link a[href*="/join"]');
+		const legacyHref = legacyJoinLink?.getAttribute('href');
+		if (legacyHref) {
+			const normalizedPath = normalizeMyServerPath(legacyHref);
+			return parsePathSegmentFromHref(normalizedPath, 0);
 		}
 
-		const normalizedPath = normalizeMyServerPath(href);
-		return parsePathSegmentFromHref(normalizedPath, 0);
+		const mainLink = queryFirst(serverBlock, MYSERVER_MAIN_LINK_SELECTORS);
+		const mainHref = mainLink?.getAttribute('href');
+		if (mainHref) {
+			const normalizedPath = normalizeMyServerPath(mainHref);
+			return parseLastPathSegment(normalizedPath);
+		}
+
+		const joinButton = queryFirst(serverBlock, MYSERVER_JOIN_SELECTORS);
+		return extractMyServerIdFromJoinButton(joinButton);
 	},
 	getServerName: (serverBlock) => {
-		const nameElement = serverBlock.querySelector('span.server_name');
+		const nameElement = queryFirst(serverBlock, MYSERVER_NAME_SELECTORS);
 		return nameElement ? nameElement.textContent.trim() : UNKNOWN_SERVER;
 	},
 	getMainLink: (serverBlock) => {
-		const link = serverBlock.querySelector('.servers_info a[href^="/"]');
+		const link = queryFirst(serverBlock, MYSERVER_MAIN_LINK_SELECTORS);
 		const href = link?.getAttribute('href');
 		return toAbsoluteUrl('https://myserver.gg', href ? normalizeMyServerPath(href) : null);
 	},
 	getJoinLink: (serverBlock) => {
-		const link = serverBlock.querySelector('td.join_link a.btn.btn-primary.btn-xs');
-		const href = link?.getAttribute('href');
-		return toAbsoluteUrl('https://myserver.gg', href ? normalizeMyServerPath(href) : null);
+		const legacyLink = serverBlock.querySelector('td.join_link a.btn.btn-primary.btn-xs');
+		const legacyHref = legacyLink?.getAttribute('href');
+		if (legacyHref) {
+			return toAbsoluteUrl(
+				'https://myserver.gg',
+				normalizeMyServerPath(legacyHref)
+			);
+		}
+
+		const viewLink = queryFirst(serverBlock, MYSERVER_VIEW_LINK_SELECTORS);
+		const viewHref = viewLink?.getAttribute('href');
+		if (viewHref) {
+			return toAbsoluteUrl('https://myserver.gg', normalizeMyServerPath(viewHref));
+		}
+
+		const serverId = MYSERVER.getServerId(serverBlock);
+		return serverId ? `https://myserver.gg/${serverId}` : null;
 	},
 };
 
@@ -140,10 +194,10 @@ const DISCORDSERVER_INFO = {
 	key: 'discordserver.info',
 	matches: (hostname) => hostname.includes('discordserver.info'),
 	blockSelector: 'section.server',
-	joinButtonSelector: '.buttons a[href*="/invite"]',
+	joinButtonSelector: 'a[href*="/invite"]',
 	getServerBlocks: () => document.querySelectorAll('section.server'),
-	getJoinButton: (serverBlock) => serverBlock.querySelector('.buttons a[href*="/invite"]'),
-	getJoinButtonFromEvent: (target) => target.closest('.buttons a[href*="/invite"]'),
+	getJoinButton: (serverBlock) => serverBlock.querySelector('a[href*="/invite"]'),
+	getJoinButtonFromEvent: (target) => target.closest('a[href*="/invite"]'),
 	getServerBlockFromJoinButton: (joinButton) => joinButton.closest('section.server'),
 	isRelevantNode: (node) => nodeMatchesBlock(node, 'section.server'),
 	getServerId: (serverBlock) => {
@@ -159,7 +213,7 @@ const DISCORDSERVER_INFO = {
 		return toAbsoluteUrl('https://discordserver.info', link?.getAttribute('href'));
 	},
 	getJoinLink: (serverBlock) => {
-		const link = serverBlock.querySelector('.buttons a[href*="/invite"]');
+		const link = serverBlock.querySelector('a[href*="/invite"]');
 		return toAbsoluteUrl('https://discordserver.info', link?.getAttribute('href'));
 	},
 };

@@ -1,6 +1,10 @@
 ﻿import './style.css';
 
-import { DEFAULT_LANGUAGE, SERVERS_PER_PAGE } from './constants.js';
+import {
+	DEFAULT_LANGUAGE,
+	DEFAULT_TIME_FORMAT,
+	SERVERS_PER_PAGE,
+} from './constants.js';
 import { buildUpdatedServerPayload, parseStorageRecords } from './data.js';
 import {
 	applyTranslationsToDocument,
@@ -12,10 +16,12 @@ import {
 	clearStorage,
 	getAllStorage,
 	getLanguage,
+	getTimeFormat,
 	notifyStorageChanged,
 	removeStorage,
 	setLanguage,
 	setStorage,
+	setTimeFormat,
 } from './storage.js';
 
 const state = {
@@ -24,6 +30,8 @@ const state = {
 	servers: [],
 	query: '',
 	currentPage: 1,
+	expandedServerKey: null,
+	timeFormat: DEFAULT_TIME_FORMAT,
 };
 
 const SEARCH_DEBOUNCE_MS = 120;
@@ -42,6 +50,7 @@ const elements = {
 	modalContent: document.querySelector('.modal__content'),
 	closeModalButton: document.getElementById('close-modal'),
 	languageSelect: document.getElementById('language-select'),
+	timeFormatSelect: document.getElementById('time-format-select'),
 	resetButton: document.getElementById('reset-button'),
 	dropdownToggle: document.querySelector('.dropdown-toggle'),
 	dropdownMenu: document.querySelector('.dropdown-menu'),
@@ -50,6 +59,40 @@ const elements = {
 
 function t(key, fallback) {
 	return translate(state.translations, key, fallback);
+}
+
+function normalizeTimeFormat(value) {
+	return value === '12' ? '12' : '24';
+}
+
+function getTimeLocaleOptions() {
+	return {
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: state.timeFormat === '12',
+	};
+}
+
+function getSortedHistoryEntries(server) {
+	if (!Array.isArray(server.history)) {
+		return [];
+	}
+
+	return [...server.history].sort(
+		(left, right) => new Date(right).getTime() - new Date(left).getTime()
+	);
+}
+
+function formatHistoryDate(historyDate) {
+	const parsedDate = new Date(historyDate);
+	if (Number.isNaN(parsedDate.getTime())) {
+		return String(historyDate);
+	}
+
+	return parsedDate.toLocaleString([], getTimeLocaleOptions());
 }
 
 function getFilteredServers() {
@@ -85,7 +128,8 @@ function createHistoryTooltip(server) {
 	const tooltip = document.createElement('div');
 	tooltip.className = 'custom-tooltip';
 
-	if (!Array.isArray(server.history) || server.history.length === 0) {
+	const sortedHistory = getSortedHistoryEntries(server);
+	if (sortedHistory.length === 0) {
 		const emptyEntry = document.createElement('div');
 		emptyEntry.className = 'tooltip-entry';
 		emptyEntry.textContent = t('noHistory', 'No visit history');
@@ -93,14 +137,10 @@ function createHistoryTooltip(server) {
 		return tooltip;
 	}
 
-	const sortedHistory = [...server.history].sort(
-		(left, right) => new Date(right).getTime() - new Date(left).getTime()
-	);
-
 	for (const historyDate of sortedHistory) {
 		const entry = document.createElement('div');
 		entry.className = 'tooltip-entry';
-		entry.textContent = new Date(historyDate).toLocaleString();
+		entry.textContent = formatHistoryDate(historyDate);
 		tooltip.appendChild(entry);
 	}
 
@@ -121,9 +161,49 @@ async function updateServerLastVisited(server) {
 	notifyStorageChanged();
 }
 
+function toggleServerHistory(serverKey) {
+	state.expandedServerKey = state.expandedServerKey === serverKey ? null : serverKey;
+	renderServerList();
+}
+
+function createHistoryPanel(server) {
+	const historyPanel = document.createElement('div');
+	historyPanel.className = 'server-history-panel';
+
+	if (state.expandedServerKey !== server.key) {
+		return historyPanel;
+	}
+
+	historyPanel.classList.add('server-history-panel--open');
+
+	const sortedHistory = getSortedHistoryEntries(server);
+	if (sortedHistory.length === 0) {
+		const emptyEntry = document.createElement('div');
+		emptyEntry.className = 'server-history-entry server-history-entry--empty';
+		emptyEntry.textContent = t('noHistory', 'No visit history');
+		historyPanel.appendChild(emptyEntry);
+		return historyPanel;
+	}
+
+	for (const [index, historyDate] of sortedHistory.entries()) {
+		const entry = document.createElement('div');
+		entry.className = 'server-history-entry';
+		entry.textContent = `${index + 1}. ${formatHistoryDate(historyDate)}`;
+		historyPanel.appendChild(entry);
+	}
+
+	return historyPanel;
+}
+
 function createServerListItem(server) {
 	const listItem = document.createElement('li');
 	listItem.className = 'server-item';
+	if (state.expandedServerKey === server.key) {
+		listItem.classList.add('server-item--expanded');
+	}
+
+	const mainRow = document.createElement('div');
+	mainRow.className = 'server-item-main';
 
 	const iconContainer = document.createElement('div');
 	iconContainer.className = 'icon-container';
@@ -135,15 +215,19 @@ function createServerListItem(server) {
 	iconContainer.appendChild(icon);
 	iconContainer.appendChild(createHistoryTooltip(server));
 
-	const nameLink = document.createElement('a');
-	nameLink.className = 'server-name';
-	nameLink.href = server.mainLink;
-	nameLink.textContent = server.name;
-	nameLink.title = server.name;
-	nameLink.target = '_blank';
-	nameLink.rel = 'noopener noreferrer';
-	nameLink.addEventListener('click', () => {
-		void updateServerLastVisited(server);
+	const nameButton = document.createElement('button');
+	nameButton.className = 'server-name server-name-button';
+	nameButton.type = 'button';
+	nameButton.textContent = server.name;
+	nameButton.title = server.name;
+	nameButton.setAttribute(
+		'aria-expanded',
+		String(state.expandedServerKey === server.key)
+	);
+	nameButton.addEventListener('click', (event) => {
+		event.preventDefault();
+		event.stopPropagation();
+		toggleServerHistory(server.key);
 	});
 
 	const countElement = document.createElement('span');
@@ -171,7 +255,8 @@ function createServerListItem(server) {
 		void deleteServer(server);
 	});
 
-	listItem.append(iconContainer, nameLink, countElement, joinLink, deleteButton);
+	mainRow.append(iconContainer, nameButton, countElement, joinLink, deleteButton);
+	listItem.append(mainRow, createHistoryPanel(server));
 	return listItem;
 }
 
@@ -216,6 +301,9 @@ async function loadServers() {
 		}
 
 		state.servers = servers;
+		if (!state.servers.some((server) => server.key === state.expandedServerKey)) {
+			state.expandedServerKey = null;
+		}
 		renderServerList();
 	} catch (error) {
 		console.error('[Discord Server Tracker] Failed to load servers:', error);
@@ -425,6 +513,14 @@ function wireEvents() {
 		closeSettingsModal();
 	});
 
+	elements.timeFormatSelect.addEventListener('change', async (event) => {
+		const selectedTimeFormat = normalizeTimeFormat(event.target.value);
+		state.timeFormat = selectedTimeFormat;
+		await setTimeFormat(selectedTimeFormat);
+		notifyStorageChanged();
+		renderServerList();
+	});
+
 	elements.dropdownToggle.addEventListener('click', toggleDropdownMenu);
 
 	document.addEventListener('click', (event) => {
@@ -460,7 +556,11 @@ async function init() {
 	wireEvents();
 
 	const savedLanguage = await getLanguage(DEFAULT_LANGUAGE);
+	const savedTimeFormat = await getTimeFormat(DEFAULT_TIME_FORMAT);
+	state.timeFormat = normalizeTimeFormat(savedTimeFormat);
+
 	elements.languageSelect.value = savedLanguage;
+	elements.timeFormatSelect.value = state.timeFormat;
 
 	await applyLanguage(savedLanguage);
 	await loadServers();

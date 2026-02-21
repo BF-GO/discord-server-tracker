@@ -1,5 +1,12 @@
 const PREVIEW_STORAGE_KEY = 'discord-server-tracker-preview-storage';
 const PREVIEW_LANGUAGE_KEY = 'discord-server-tracker-preview-language';
+const PREVIEW_TIME_FORMAT_KEY = 'discord-server-tracker-preview-time-format';
+const TIME_FORMAT_STORAGE_KEY = 'timeFormat';
+const DEFAULT_TIME_FORMAT = '24';
+
+function normalizeTimeFormat(value) {
+	return value === '12' ? '12' : '24';
+}
 
 function hasChromeRuntime() {
 	return (
@@ -132,6 +139,35 @@ export async function setLanguage(language) {
 
 	return new Promise((resolve) => {
 		chrome.storage.local.set({ language }, () => {
+			resolve();
+		});
+	});
+}
+
+export async function getTimeFormat(defaultTimeFormat = DEFAULT_TIME_FORMAT) {
+	const fallbackTimeFormat = normalizeTimeFormat(defaultTimeFormat);
+	if (!hasChromeStorage()) {
+		return normalizeTimeFormat(
+			window.localStorage.getItem(PREVIEW_TIME_FORMAT_KEY) || fallbackTimeFormat
+		);
+	}
+
+	return new Promise((resolve) => {
+		chrome.storage.local.get(TIME_FORMAT_STORAGE_KEY, (data) => {
+			resolve(normalizeTimeFormat(data?.[TIME_FORMAT_STORAGE_KEY] || fallbackTimeFormat));
+		});
+	});
+}
+
+export async function setTimeFormat(timeFormat) {
+	const normalizedTimeFormat = normalizeTimeFormat(timeFormat);
+	if (!hasChromeStorage()) {
+		window.localStorage.setItem(PREVIEW_TIME_FORMAT_KEY, normalizedTimeFormat);
+		return;
+	}
+
+	return new Promise((resolve) => {
+		chrome.storage.local.set({ [TIME_FORMAT_STORAGE_KEY]: normalizedTimeFormat }, () => {
 			resolve();
 		});
 	});

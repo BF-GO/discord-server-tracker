@@ -1,10 +1,11 @@
 ﻿import { resolveSiteAdapter } from './site-adapters.js';
 import { getStorageValue, notifyStorageChanged, setStorageValue } from './storage.js';
 
-const HISTORY_LIMIT = 5;
 const REFRESH_INTERVAL_MS = 5000;
 const REFRESH_DEBOUNCE_MS = 120;
 const UNKNOWN_SERVER = 'Unknown server';
+const DEFAULT_TIME_FORMAT = '24';
+const TIME_FORMAT_STORAGE_KEY = 'timeFormat';
 
 const adapter = resolveSiteAdapter(window.location.hostname);
 
@@ -13,6 +14,22 @@ if (!adapter) {
 } else {
 	let isActive = true;
 	let refreshTimeoutId = null;
+	let currentTimeFormat = DEFAULT_TIME_FORMAT;
+
+	function normalizeTimeFormat(value) {
+		return value === '12' ? '12' : '24';
+	}
+
+	function getDateTimeFormatOptions() {
+		return {
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: currentTimeFormat === '12',
+		};
+	}
 
 	if (typeof adapter.onInit === 'function') {
 		adapter.onInit();
@@ -22,8 +39,63 @@ if (!adapter) {
 		return `${adapter.key}_${serverId}`;
 	}
 
-	function setButtonTrackedState(joinButton, count) {
-		const safeCount = Number.isFinite(count) ? count : 0;
+	function formatCompactTimestamp(timestamp) {
+		const date = new Date(timestamp);
+		if (Number.isNaN(date.getTime())) {
+			return '--:--';
+		}
+
+		const now = new Date();
+		const isSameDay = now.toDateString() === date.toDateString();
+		const timePart = date.toLocaleTimeString([], {
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: currentTimeFormat === '12',
+		});
+
+		if (isSameDay) {
+			return timePart;
+		}
+
+		const datePart = date.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
+		return `${datePart} ${timePart}`;
+	}
+
+	function buildHistoryTooltip(historyEntries) {
+		if (!Array.isArray(historyEntries) || historyEntries.length === 0) {
+			return 'No click history yet.';
+		}
+
+		const lines = historyEntries
+			.filter((entry) => typeof entry === 'string' && entry.length > 0)
+			.map((entry, index) => {
+				const date = new Date(entry);
+				const formatted = Number.isNaN(date.getTime())
+					? entry
+					: date.toLocaleString([], getDateTimeFormatOptions());
+				return `${index + 1}. ${formatted}`;
+			});
+
+		if (lines.length === 0) {
+			return 'No click history yet.';
+		}
+
+		return `Join click history:\n${lines.join('\n')}`;
+	}
+
+	function setButtonTrackedState(joinButton, serverData) {
+		const safeCount = Number.isFinite(Number(serverData?.count))
+			? Number(serverData.count)
+			: 0;
+		const historyEntries = Array.isArray(serverData?.history)
+			? serverData.history.filter(
+					(entry) => typeof entry === 'string' && entry.length > 0
+				)
+			: [];
+		const fallbackLastVisited = historyEntries.length > 0 ? Date.parse(historyEntries[0]) : null;
+		const lastVisited = Number.isFinite(serverData?.lastVisited)
+			? serverData.lastVisited
+			: fallbackLastVisited;
 
 		if (safeCount > 0) {
 			joinButton.classList.add('tracked-join-button');
@@ -36,6 +108,17 @@ if (!adapter) {
 			}
 
 			countBadge.textContent = ` (${safeCount})`;
+
+			let lastVisitedBadge = joinButton.querySelector('.last-visited-badge');
+			if (!lastVisitedBadge) {
+				lastVisitedBadge = document.createElement('span');
+				lastVisitedBadge.className = 'last-visited-badge';
+				joinButton.appendChild(lastVisitedBadge);
+			}
+
+			lastVisitedBadge.textContent =
+				lastVisited !== null ? ` ${formatCompactTimestamp(lastVisited)}` : ' --:--';
+			lastVisitedBadge.title = buildHistoryTooltip(historyEntries);
 			return;
 		}
 
@@ -43,6 +126,10 @@ if (!adapter) {
 		const countBadge = joinButton.querySelector('.click-count');
 		if (countBadge) {
 			countBadge.remove();
+		}
+		const lastVisitedBadge = joinButton.querySelector('.last-visited-badge');
+		if (lastVisitedBadge) {
+			lastVisitedBadge.remove();
 		}
 	}
 
@@ -80,7 +167,7 @@ if (!adapter) {
 
 		try {
 			const serverData = await normalizeServerData(storageKey, await getServerData(storageKey));
-			setButtonTrackedState(joinButton, Number(serverData?.count ?? 0));
+			setButtonTrackedState(joinButton, serverData);
 		} catch (error) {
 			console.error('[Discord Server Tracker] Failed to sync button state:', error);
 		}
@@ -116,16 +203,26 @@ if (!adapter) {
 		}, REFRESH_DEBOUNCE_MS);
 	}
 
+	async function refreshTimeFormat() {
+		try {
+			const settings = await getStorageValue([TIME_FORMAT_STORAGE_KEY]);
+			currentTimeFormat = normalizeTimeFormat(settings?.[TIME_FORMAT_STORAGE_KEY]);
+		} catch {
+			currentTimeFormat = DEFAULT_TIME_FORMAT;
+		}
+	}
+
 	function buildNextServerData(existingData, serverBlock) {
 		const now = Date.now();
 		const historyEntry = new Date(now).toISOString();
 
 		const history = Array.isArray(existingData?.history)
-			? [...existingData.history]
+			? existingData.history.filter(
+					(entry) => typeof entry === 'string' && entry.length > 0
+				)
 			: [];
 
 		history.unshift(historyEntry);
-		history.length = HISTORY_LIMIT;
 
 		const nextCount = (Number(existingData?.count) || 0) + 1;
 
@@ -157,7 +254,7 @@ if (!adapter) {
 			const nextData = buildNextServerData(currentData, serverBlock);
 
 			await setStorageValue({ [storageKey]: nextData });
-			setButtonTrackedState(joinButton, nextData.count);
+			setButtonTrackedState(joinButton, nextData);
 			notifyStorageChanged();
 		} catch (error) {
 			console.error('[Discord Server Tracker] Failed to track server click:', error);
@@ -232,12 +329,16 @@ if (!adapter) {
 	function setupStorageChangedListener() {
 		chrome.runtime.onMessage.addListener((request) => {
 			if (request?.action === 'storageChanged') {
-				void refreshButtons();
+				void (async () => {
+					await refreshTimeFormat();
+					await refreshButtons();
+				})();
 			}
 		});
 	}
 
 	async function run() {
+		await refreshTimeFormat();
 		await refreshButtons();
 		setupClickTracking();
 		setupDomObserver();
