@@ -15,4 +15,8 @@ All upload-ready images are 24-bit RGB PNG files without transparency.
 - `promo-small-440x280.png` — small promo tile (440 × 280).
 - `promo-marquee-1400x560.png` — marquee promo tile (1400 × 560).
 
+## Store icon
+
+- `icon-store-128.png` — Chrome Web Store icon (128 × 128) with a 96 × 96 visible mark and 16 px transparent padding.
+
 The original generated artwork used for the promotional compositions is kept in `source-artwork/`.

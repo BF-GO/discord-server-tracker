@@ -1,5 +1,10 @@
 ﻿import { resolveSiteAdapter } from './site-adapters.js';
-import { getStorageValue, notifyStorageChanged, setStorageValue } from './storage.js';
+import {
+	getStorageValue,
+	isExtensionContextInvalidatedError,
+	notifyStorageChanged,
+	setStorageValue,
+} from './storage.js';
 
 const REFRESH_INTERVAL_MS = 5000;
 const REFRESH_DEBOUNCE_MS = 120;
@@ -15,6 +20,36 @@ if (!adapter) {
 	let isActive = true;
 	let refreshTimeoutId = null;
 	let currentTimeFormat = DEFAULT_TIME_FORMAT;
+	const cleanupCallbacks = [];
+
+	function stopContentScript() {
+		if (!isActive) {
+			return;
+		}
+
+		isActive = false;
+		if (refreshTimeoutId !== null) {
+			clearTimeout(refreshTimeoutId);
+			refreshTimeoutId = null;
+		}
+
+		for (const cleanup of cleanupCallbacks.splice(0)) {
+			try {
+				cleanup();
+			} catch {
+				// Extension APIs may already be unavailable after an update.
+			}
+		}
+	}
+
+	function handleRuntimeError(message, error) {
+		if (isExtensionContextInvalidatedError(error)) {
+			stopContentScript();
+			return;
+		}
+
+		console.error(message, error);
+	}
 
 	function normalizeTimeFormat(value) {
 		return value === '12' ? '12' : '24';
@@ -169,7 +204,7 @@ if (!adapter) {
 			const serverData = await normalizeServerData(storageKey, await getServerData(storageKey));
 			setButtonTrackedState(joinButton, serverData);
 		} catch (error) {
-			console.error('[Discord Server Tracker] Failed to sync button state:', error);
+			handleRuntimeError('[Discord Server Tracker] Failed to sync button state:', error);
 		}
 	}
 
@@ -207,7 +242,12 @@ if (!adapter) {
 		try {
 			const settings = await getStorageValue([TIME_FORMAT_STORAGE_KEY]);
 			currentTimeFormat = normalizeTimeFormat(settings?.[TIME_FORMAT_STORAGE_KEY]);
-		} catch {
+		} catch (error) {
+			if (isExtensionContextInvalidatedError(error)) {
+				stopContentScript();
+				return;
+			}
+
 			currentTimeFormat = DEFAULT_TIME_FORMAT;
 		}
 	}
@@ -263,12 +303,12 @@ if (!adapter) {
 			setButtonTrackedState(joinButton, nextData);
 			notifyStorageChanged();
 		} catch (error) {
-			console.error('[Discord Server Tracker] Failed to track server click:', error);
+			handleRuntimeError('[Discord Server Tracker] Failed to track server click:', error);
 		}
 	}
 
 	function setupClickTracking() {
-		document.body.addEventListener('click', (event) => {
+		const clickListener = (event) => {
 			if (!isActive) {
 				return;
 			}
@@ -283,7 +323,10 @@ if (!adapter) {
 			}
 
 			void handleJoinClick(joinButton);
-		});
+		};
+
+		document.body.addEventListener('click', clickListener);
+		cleanupCallbacks.push(() => document.body.removeEventListener('click', clickListener));
 	}
 
 	function setupDomObserver() {
@@ -306,14 +349,7 @@ if (!adapter) {
 		});
 
 		observer.observe(document.body, { childList: true, subtree: true });
-
-		window.addEventListener(
-			'beforeunload',
-			() => {
-				observer.disconnect();
-			},
-			{ once: true }
-		);
+		cleanupCallbacks.push(() => observer.disconnect());
 	}
 
 	function setupPeriodicRefresh() {
@@ -322,45 +358,49 @@ if (!adapter) {
 				void refreshButtons();
 			}
 		}, REFRESH_INTERVAL_MS);
-
-		window.addEventListener(
-			'beforeunload',
-			() => {
-				clearInterval(timerId);
-			},
-			{ once: true }
-		);
+		cleanupCallbacks.push(() => clearInterval(timerId));
 	}
 
 	function setupStorageChangedListener() {
-		chrome.runtime.onMessage.addListener((request) => {
+		const storageChangedListener = (request) => {
 			if (request?.action === 'storageChanged') {
 				void (async () => {
 					await refreshTimeFormat();
 					await refreshButtons();
 				})();
 			}
+		};
+
+		chrome.runtime.onMessage.addListener(storageChangedListener);
+		cleanupCallbacks.push(() => {
+			chrome.runtime.onMessage.removeListener(storageChangedListener);
 		});
 	}
 
 	async function run() {
 		await refreshTimeFormat();
 		await refreshButtons();
+		if (!isActive) {
+			return;
+		}
+
 		setupClickTracking();
 		setupDomObserver();
 		setupPeriodicRefresh();
 		setupStorageChangedListener();
 	}
 
-	window.addEventListener('beforeunload', () => {
-		isActive = false;
-	});
+	function start() {
+		void run().catch((error) => {
+			handleRuntimeError('[Discord Server Tracker] Failed to initialize content script:', error);
+		});
+	}
+
+	window.addEventListener('beforeunload', stopContentScript, { once: true });
 
 	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', () => {
-			void run();
-		});
+		document.addEventListener('DOMContentLoaded', start, { once: true });
 	} else {
-		void run();
+		start();
 	}
 }
