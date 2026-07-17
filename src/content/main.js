@@ -356,10 +356,6 @@ if (!adapter) {
 		isActive = false;
 	});
 
-	window.addEventListener('unload', () => {
-		isActive = false;
-	});
-
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', () => {
 			void run();
