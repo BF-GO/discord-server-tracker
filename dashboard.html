@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark light" />
+		<title>Server history · Discord Server Tracker</title>
+	</head>
+	<body class="dashboard-body">
+		<header class="dashboard-topbar">
+			<a class="dashboard-brand" href="dashboard.html" aria-label="Discord Server Tracker dashboard">
+				<span class="brand__mark" aria-hidden="true">D</span>
+				<span><strong data-i18n-key="appTitle">Discord Server Tracker</strong><small data-i18n-key="dashboard">Dashboard</small></span>
+			</a>
+			<button id="settings-button" class="secondary-button dashboard-settings" type="button" data-i18n-label="settingsTitle" aria-label="Settings">
+				<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.1A1.7 1.7 0 0 0 8.5 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3V9.6h.1A1.7 1.7 0 0 0 4.6 8.5a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.5 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.15.4.36.75.66 1 .3.26.68.4 1.07.4H21v4h-.1a1.7 1.7 0 0 0-1.5.6Z"/></svg>
+				<span data-i18n-key="settingsTitle">Settings</span>
+			</button>
+		</header>
+
+		<main class="dashboard-shell">
+			<section class="dashboard-hero">
+				<div><span class="eyebrow" data-i18n-key="dashboard">Dashboard</span><h1 data-i18n-key="dashboardTitle">Server history</h1><p data-i18n-key="dashboardSubtitle">Search, organize, and manage every tracked Discord server.</p></div>
+				<label class="search-field dashboard-search" for="search-input">
+					<svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+					<input id="search-input" type="search" autocomplete="off" data-i18n-placeholder="searchPlaceholder" placeholder="Search by server name…" />
+				</label>
+			</section>
+
+			<section id="stats-grid" class="stats-grid" aria-label="Summary statistics">
+				<div class="stat-card skeleton-stat"></div><div class="stat-card skeleton-stat"></div><div class="stat-card skeleton-stat"></div><div class="stat-card skeleton-stat"></div><div class="stat-card skeleton-stat"></div>
+			</section>
+
+			<section class="dashboard-panel">
+				<div class="dashboard-controls">
+					<div id="dashboard-tabs" class="dashboard-tabs" role="tablist">
+						<button class="dashboard-tab is-active" role="tab" aria-selected="true" data-view="all" data-i18n-key="allServers">All servers</button>
+						<button class="dashboard-tab" role="tab" aria-selected="false" data-view="favorites" data-i18n-key="favorites">Favorites</button>
+						<button class="dashboard-tab" role="tab" aria-selected="false" data-view="recent" data-i18n-key="recent">Recent</button>
+						<button class="dashboard-tab" role="tab" aria-selected="false" data-view="archived" data-i18n-key="archived">Archived</button>
+					</div>
+
+					<div class="filter-grid">
+						<label><span data-i18n-key="source">Source</span><select id="source-filter"><option value="all" data-i18n-key="allSources">All sources</option><option value="server-discord.com">server-discord.com</option><option value="myserver.gg">myserver.gg</option><option value="discordserver.info">discordserver.info</option><option value="disboard.org">disboard.org</option></select></label>
+						<label><span data-i18n-key="dateRange">Date range</span><select id="date-filter"><option value="all" data-i18n-key="allTime">All time</option><option value="today" data-i18n-key="today">Today</option><option value="7" data-i18n-key="last7Days">Last 7 days</option><option value="30" data-i18n-key="last30Days">Last 30 days</option></select></label>
+						<label><span data-i18n-key="sortBy">Sort by</span><select id="sort-select"><option value="last" data-i18n-key="sortLastVisited">Last visited</option><option value="visits" data-i18n-key="sortMostVisited">Most visited</option><option value="name" data-i18n-key="sortName">Server name</option><option value="first" data-i18n-key="sortFirstVisited">First visited</option></select></label>
+						<button id="clear-filters" class="text-button" type="button" data-i18n-key="clearFilters">Clear filters</button>
+					</div>
+				</div>
+
+				<div class="list-heading"><div><h2 data-i18n-key="server">Server</h2><p id="result-summary"></p></div><span data-i18n-key="actions">Actions</span></div>
+				<section id="dashboard-list" class="dashboard-list" aria-live="polite" aria-busy="true">
+					<div class="dashboard-row skeleton-row"></div><div class="dashboard-row skeleton-row"></div><div class="dashboard-row skeleton-row"></div>
+				</section>
+				<footer id="list-footer" class="list-footer" hidden><button id="load-more" class="secondary-button" type="button" data-i18n-key="loadMore">Load more</button></footer>
+			</section>
+		</main>
+
+		<dialog id="settings-dialog" class="dialog dialog--settings">
+			<form method="dialog" class="dialog__surface">
+				<header class="dialog__header"><div><span class="eyebrow" data-i18n-key="preferences">Preferences</span><h2 data-i18n-key="settingsTitle">Settings</h2></div><button class="icon-button dialog-close" value="cancel" aria-label="Close">×</button></header>
+				<div class="dialog__body settings-grid">
+					<label><span data-i18n-key="language">Language</span><select id="language-select"><option value="en">English</option><option value="ru">Русский</option></select></label>
+					<label><span data-i18n-key="theme">Theme</span><select id="theme-select"><option value="system" data-i18n-key="themeSystem">System</option><option value="light" data-i18n-key="themeLight">Light</option><option value="dark" data-i18n-key="themeDark">Dark</option></select></label>
+					<label><span data-i18n-key="timeFormat">Time format</span><select id="time-format-select"><option value="24" data-i18n-key="timeFormat24">24-hour</option><option value="12" data-i18n-key="timeFormat12">12-hour</option></select></label>
+				</div>
+			</form>
+		</dialog>
+
+		<dialog id="note-dialog" class="dialog">
+			<form method="dialog" class="dialog__surface">
+				<header class="dialog__header"><div><span class="eyebrow" data-i18n-key="personalNote">Personal note</span><h2 id="note-server-name"></h2></div><button class="icon-button dialog-close" value="cancel" aria-label="Close">×</button></header>
+				<div class="dialog__body"><label for="note-input" class="sr-only" data-i18n-key="personalNote">Personal note</label><textarea id="note-input" maxlength="500" rows="6" data-i18n-placeholder="notePlaceholder" placeholder="Add a short note…"></textarea></div>
+				<footer class="dialog__footer"><button class="secondary-button" value="cancel" data-i18n-key="cancel">Cancel</button><button id="save-note" class="primary-button" type="button" data-i18n-key="save">Save</button></footer>
+			</form>
+		</dialog>
+
+		<dialog id="history-dialog" class="dialog history-dialog">
+			<form method="dialog" class="dialog__surface">
+				<header class="dialog__header"><div><span class="eyebrow" data-i18n-key="recentVisits">Recent visits</span><h2 id="history-server-name"></h2></div><button class="icon-button dialog-close" value="cancel" aria-label="Close">×</button></header>
+				<div id="history-dialog-list" class="dialog__body full-history"></div>
+			</form>
+		</dialog>
+
+		<dialog id="confirm-dialog" class="dialog">
+			<form method="dialog" class="dialog__surface">
+				<header class="dialog__header"><div><span class="eyebrow" data-i18n-key="confirmation">Confirmation</span><h2 id="confirm-title"></h2></div><button class="icon-button dialog-close" value="cancel" aria-label="Close">×</button></header>
+				<div class="dialog__body"><p id="confirm-message" class="muted"></p></div>
+				<footer class="dialog__footer"><button class="secondary-button" value="cancel" data-i18n-key="cancel">Cancel</button><button id="confirm-action" class="danger-button" type="button" data-i18n-key="confirm">Confirm</button></footer>
+			</form>
+		</dialog>
+
+		<div id="toast-region" class="toast-region dashboard-toasts" role="status" aria-live="polite"></div>
+		<script type="module" src="/src/dashboard/main.js"></script>
+	</body>
+</html>

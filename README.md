@@ -9,6 +9,10 @@ Discord Server Tracker is a Manifest V3 browser extension that tracks clicks on 
 - Project migrated to a Vite-based build pipeline.
 - Legacy monolithic scripts were refactored into modular source files.
 - Build output is now generated in `dist/` and can be zipped via script.
+- The compact popup provides recent, favorite, and most-visited quick views.
+- `dashboard.html` provides full search, filtering, statistics, notes, and archive management.
+- Existing local history is migrated in place; import supports merge and replace modes.
+- System, light, and dark themes are supported.
 
 ## Supported Sites
 
@@ -57,6 +61,8 @@ public/              # Static extension assets copied as-is to dist
 src/background/      # Service worker source
 src/content/         # Content script source
 src/popup/           # Popup UI (HTML/CSS/JS)
+src/dashboard/       # Full history dashboard UI
+dashboard.html       # Dashboard entry point
 vite.config.js       # Build configuration
 build.js             # Zip packaging script for dist
 ```

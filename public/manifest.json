@@ -1,8 +1,8 @@
 ﻿{
 	"manifest_version": 3,
 	"name": "Discord Server Tracker",
-	"version": "3.1.0",
-	"description": "Track servers on server-discord.com, myserver.gg, discordserver.info, and disboard.org. Save history and count clicks.",
+	"version": "4.0.0",
+	"description": "Track, search, favorite, annotate, and manage Discord servers from supported listing websites.",
 	"permissions": ["storage"],
 	"background": {
 		"service_worker": "background.js"

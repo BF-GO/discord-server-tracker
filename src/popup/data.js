@@ -1,15 +1,17 @@
-﻿import { SITE_BASE_URLS } from './constants.js';
+import { SITE_BASE_URLS, SUPPORTED_SITES } from './constants.js';
 
 function splitStorageKey(storageKey) {
-	const separatorIndex = storageKey.indexOf('_');
-	if (separatorIndex === -1) {
+	const site = SUPPORTED_SITES.find((candidate) => storageKey.startsWith(`${candidate}_`));
+	if (!site) {
 		return null;
 	}
 
-	return {
-		site: storageKey.slice(0, separatorIndex),
-		id: storageKey.slice(separatorIndex + 1),
-	};
+	const id = storageKey.slice(site.length + 1);
+	return id ? { site, id } : null;
+}
+
+export function isServerStorageKey(storageKey) {
+	return splitStorageKey(storageKey) !== null;
 }
 
 function normalizeHistory(history) {
@@ -17,28 +19,32 @@ function normalizeHistory(history) {
 		return [];
 	}
 
-	return history
-		.filter((entry) => typeof entry === 'string' && entry.length > 0);
+	return [...new Set(
+		history.filter((entry) => {
+			if (typeof entry !== 'string' || entry.length === 0) {
+				return false;
+			}
+
+			return !Number.isNaN(new Date(entry).getTime());
+		})
+	)].sort((left, right) => new Date(right).getTime() - new Date(left).getTime());
 }
 
-function normalizeLastVisited(lastVisited) {
-	return typeof lastVisited === 'number' && Number.isFinite(lastVisited)
-		? lastVisited
-		: 0;
+function normalizeTimestamp(value, fallback = 0) {
+	const normalized = Number(value);
+	return Number.isFinite(normalized) && normalized > 0 ? normalized : fallback;
 }
 
-function normalizeCount(count) {
+function normalizeCount(count, historyLength = 0) {
 	const normalized = Number(count);
-	return Number.isFinite(normalized) && normalized > 0 ? normalized : 0;
+	return Number.isFinite(normalized) && normalized > 0
+		? Math.max(Math.floor(normalized), historyLength)
+		: historyLength;
 }
 
 function buildMainLink(site, serverId) {
 	const base = SITE_BASE_URLS[site] || '';
-	if (!base) {
-		return '';
-	}
-
-	return `${base}${serverId}`;
+	return base ? `${base}${serverId}` : '';
 }
 
 function buildJoinLink(site, serverId, mainLink) {
@@ -54,65 +60,67 @@ function buildJoinLink(site, serverId, mainLink) {
 	return normalizedMainLink ? `${normalizedMainLink}/join` : '';
 }
 
-function normalizeStoredRecord(site, serverId, rawRecord) {
-	if (!rawRecord || typeof rawRecord !== 'object') {
+function historyBounds(history) {
+	const timestamps = history
+		.map((entry) => new Date(entry).getTime())
+		.filter((timestamp) => Number.isFinite(timestamp));
+
+	return {
+		first: timestamps.length ? Math.min(...timestamps) : 0,
+		last: timestamps.length ? Math.max(...timestamps) : 0,
+	};
+}
+
+export function normalizeStoredRecord(site, serverId, rawRecord) {
+	if (!rawRecord || typeof rawRecord !== 'object' || Array.isArray(rawRecord)) {
 		return null;
 	}
 
 	const nextRecord = { ...rawRecord };
-	let changed = false;
-
 	if (site === 'server-discord.com' && !nextRecord.mainLink && nextRecord.link) {
 		nextRecord.mainLink = nextRecord.link;
 		delete nextRecord.link;
-		changed = true;
 	}
 
 	if (site === 'myserver.gg' && !nextRecord.mainLink && nextRecord.joinLink) {
 		nextRecord.mainLink = buildMainLink(site, serverId);
-		changed = true;
 	}
 
-	const normalizedCount = normalizeCount(nextRecord.count);
-	if (nextRecord.count !== normalizedCount) {
-		nextRecord.count = normalizedCount;
-		changed = true;
-	}
+	const history = normalizeHistory(nextRecord.history ?? nextRecord.visits);
+	const bounds = historyBounds(history);
+	const lastVisited = normalizeTimestamp(nextRecord.lastVisited ?? nextRecord.lastVisitedAt, bounds.last);
+	const firstVisitedAt = normalizeTimestamp(nextRecord.firstVisitedAt, bounds.first || lastVisited);
 
-	const normalizedHistory = normalizeHistory(nextRecord.history);
-	if (
-		!Array.isArray(nextRecord.history) ||
-		nextRecord.history.length !== normalizedHistory.length ||
-		nextRecord.history.some((entry, index) => entry !== normalizedHistory[index])
-	) {
-		nextRecord.history = normalizedHistory;
-		changed = true;
-	}
+	delete nextRecord.visits;
+	delete nextRecord.visitCount;
 
-	const normalizedLastVisited = normalizeLastVisited(nextRecord.lastVisited);
-	if (nextRecord.lastVisited !== normalizedLastVisited) {
-		nextRecord.lastVisited = normalizedLastVisited;
-		changed = true;
-	}
+	Object.assign(nextRecord, {
+		count: normalizeCount(rawRecord.count ?? rawRecord.visitCount, history.length),
+		name: typeof nextRecord.name === 'string' ? nextRecord.name.trim() : '',
+		mainLink: nextRecord.mainLink || buildMainLink(site, serverId),
+		joinLink: nextRecord.joinLink || buildJoinLink(site, serverId, nextRecord.mainLink),
+		history,
+		lastVisited,
+		firstVisitedAt,
+		favorite: nextRecord.favorite === true,
+		archived: nextRecord.archived === true,
+		note: typeof nextRecord.note === 'string' ? nextRecord.note.trim().slice(0, 500) : '',
+		tags: Array.isArray(nextRecord.tags)
+			? nextRecord.tags.filter((tag) => typeof tag === 'string').slice(0, 20)
+			: [],
+	});
 
-	if (!nextRecord.mainLink) {
-		nextRecord.mainLink = buildMainLink(site, serverId);
-		changed = true;
-	}
-
-	if (!nextRecord.joinLink) {
-		nextRecord.joinLink = buildJoinLink(site, serverId, nextRecord.mainLink);
-		changed = true;
-	}
-
-	return { normalized: nextRecord, changed };
+	return {
+		normalized: nextRecord,
+		changed: JSON.stringify(rawRecord) !== JSON.stringify(nextRecord),
+	};
 }
 
-export function parseStorageRecords(storageMap, unknownServerLabel) {
+export function parseStorageRecords(storageMap, unknownServerLabel = 'Unknown server') {
 	const servers = [];
 	const storageUpdates = {};
 
-	for (const [storageKey, rawRecord] of Object.entries(storageMap)) {
+	for (const [storageKey, rawRecord] of Object.entries(storageMap || {})) {
 		const parsedKey = splitStorageKey(storageKey);
 		if (!parsedKey) {
 			continue;
@@ -120,7 +128,7 @@ export function parseStorageRecords(storageMap, unknownServerLabel) {
 
 		const { site, id } = parsedKey;
 		const result = normalizeStoredRecord(site, id, rawRecord);
-		if (!result) {
+		if (!result || result.normalized.count <= 0) {
 			continue;
 		}
 
@@ -128,40 +136,66 @@ export function parseStorageRecords(storageMap, unknownServerLabel) {
 			storageUpdates[storageKey] = result.normalized;
 		}
 
-		if (result.normalized.count <= 0) {
-			continue;
-		}
-
+		const name = result.normalized.name || unknownServerLabel;
 		servers.push({
 			key: storageKey,
 			site,
 			id,
-			count: result.normalized.count,
-			name: result.normalized.name || unknownServerLabel,
-			searchName: (result.normalized.name || unknownServerLabel).toLowerCase(),
-			mainLink: result.normalized.mainLink,
-			joinLink: result.normalized.joinLink,
-			history: result.normalized.history,
-			lastVisited: result.normalized.lastVisited,
+			...result.normalized,
+			name,
+			searchName: name.toLocaleLowerCase(),
 		});
 	}
 
 	servers.sort((left, right) => right.lastVisited - left.lastVisited);
-
 	return { servers, storageUpdates };
 }
 
-export function buildUpdatedServerPayload(existingRecord) {
-	const now = Date.now();
-	const history = Array.isArray(existingRecord.history) ? [...existingRecord.history] : [];
+export function serverToStorageRecord(server) {
+	const { key, site, id, searchName, ...record } = server;
+	return record;
+}
 
-	history.unshift(new Date(now).toISOString());
+export function mergeServerRecords(existingRecord, importedRecord, site, id) {
+	const existing = normalizeStoredRecord(site, id, existingRecord)?.normalized;
+	const imported = normalizeStoredRecord(site, id, importedRecord)?.normalized;
+	if (!existing) return imported;
+	if (!imported) return existing;
 
+	const history = normalizeHistory([...(existing.history || []), ...(imported.history || [])]);
+	const newest = imported.lastVisited >= existing.lastVisited ? imported : existing;
+	const firstVisitedCandidates = [existing.firstVisitedAt, imported.firstVisitedAt]
+		.filter((timestamp) => Number.isFinite(timestamp) && timestamp > 0);
 	return {
-		...existingRecord,
-		count: (Number(existingRecord.count) || 0) + 1,
+		...existing,
+		...newest,
+		count: Math.max(existing.count, imported.count, history.length),
 		history,
-		lastVisited: now,
+		firstVisitedAt: firstVisitedCandidates.length
+			? Math.min(...firstVisitedCandidates)
+			: Math.max(existing.lastVisited, imported.lastVisited),
+		lastVisited: Math.max(existing.lastVisited, imported.lastVisited),
+		favorite: existing.favorite || imported.favorite,
+		archived: imported.archived,
+		note: imported.note || existing.note,
+		tags: [...new Set([...(existing.tags || []), ...(imported.tags || [])])],
 	};
 }
 
+export function getServerStats(servers, now = Date.now()) {
+	const activeServers = servers.filter((server) => !server.archived);
+	const totalVisits = servers.reduce((sum, server) => sum + server.count, 0);
+	const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+	const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+	const countSince = (boundary) => servers.reduce((sum, server) => (
+		sum + server.history.filter((entry) => new Date(entry).getTime() >= boundary).length
+	), 0);
+
+	return {
+		totalServers: activeServers.length,
+		totalVisits,
+		visits7: countSince(sevenDaysAgo),
+		visits30: countSince(thirtyDaysAgo),
+		mostVisited: [...servers].sort((left, right) => right.count - left.count)[0] || null,
+	};
+}

@@ -9,6 +9,7 @@ module.exports = defineConfig({
 		rollupOptions: {
 			input: {
 				popup: path.resolve(__dirname, 'popup.html'),
+				dashboard: path.resolve(__dirname, 'dashboard.html'),
 				background: path.resolve(__dirname, 'src/background/main.js'),
 				content: path.resolve(__dirname, 'src/content/main.js'),
 			},
@@ -17,7 +18,7 @@ module.exports = defineConfig({
 				chunkFileNames: 'chunks/[name].js',
 				assetFileNames: (assetInfo) => {
 					if ((assetInfo.name || '').endsWith('.css')) {
-						return 'popup.css';
+						return 'assets/[name][extname]';
 					}
 
 					return 'assets/[name][extname]';

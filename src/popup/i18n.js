@@ -18,11 +18,20 @@ export function applyTranslationsToDocument(translations) {
 			return;
 		}
 
-		if (element instanceof HTMLInputElement && element.type === 'text') {
-			element.placeholder = translations[key];
-			return;
-		}
-
 		element.textContent = translations[key];
+	});
+
+	document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
+		const key = element.getAttribute('data-i18n-placeholder');
+		if (key && translations[key]) {
+			element.setAttribute('placeholder', translations[key]);
+		}
+	});
+
+	document.querySelectorAll('[data-i18n-label]').forEach((element) => {
+		const key = element.getAttribute('data-i18n-label');
+		if (key && translations[key]) {
+			element.setAttribute('aria-label', translations[key]);
+		}
 	});
 }

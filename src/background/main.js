@@ -1,5 +1,8 @@
 ﻿const DEFAULT_LANGUAGE = 'en';
 
+const DEFAULT_THEME = 'system';
+const DEFAULT_TIME_FORMAT = '24';
+
 function storageGet(keys) {
 	return new Promise((resolve, reject) => {
 		chrome.storage.local.get(keys, (result) => {
@@ -88,11 +91,13 @@ const messageHandlers = {
 
 chrome.runtime.onInstalled.addListener(async () => {
 	try {
-		const { language } = await storageGet(['language']);
+		const preferences = await storageGet(['language', 'theme', 'timeFormat']);
+		const defaults = {};
 
-		if (!language) {
-			await storageSet({ language: DEFAULT_LANGUAGE });
-		}
+		if (!preferences.language) defaults.language = DEFAULT_LANGUAGE;
+		if (!preferences.theme) defaults.theme = DEFAULT_THEME;
+		if (!preferences.timeFormat) defaults.timeFormat = DEFAULT_TIME_FORMAT;
+		if (Object.keys(defaults).length) await storageSet(defaults);
 	} catch (error) {
 		console.error('[Discord Server Tracker] Failed to initialize defaults:', error);
 	}

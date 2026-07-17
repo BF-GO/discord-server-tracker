@@ -1,131 +1,103 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark light" />
 		<title data-i18n-key="appTitle">Discord Server Tracker</title>
 	</head>
-	<body>
-		<div class="popup-container">
-			<header>
-				<h1 data-i18n-key="appTitle">Discord Server Tracker</h1>
-				<div class="header-buttons">
-					<button id="settings-button" class="icon-button" title="Settings">
-						<img src="/icons/gear-icon.png" alt="Settings" class="button-icon" />
-					</button>
+	<body class="popup-body">
+		<div class="app-shell popup-shell">
+			<header class="topbar">
+				<div class="brand">
+					<span class="brand__mark" aria-hidden="true">D</span>
+					<div>
+						<h1 data-i18n-key="appTitle">Discord Server Tracker</h1>
+						<p id="header-summary" class="topbar__summary">0 servers · 0 visits</p>
+					</div>
 				</div>
+				<button id="settings-button" class="icon-button" type="button" data-i18n-label="settingsTitle" aria-label="Settings">
+					<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.1A1.7 1.7 0 0 0 8.5 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3V9.6h.1A1.7 1.7 0 0 0 4.6 8.5a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.5 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.15.4.36.75.66 1 .3.26.68.4 1.07.4H21v4h-.1a1.7 1.7 0 0 0-1.5.6Z"/></svg>
+				</button>
 			</header>
 
-			<main>
-				<div class="server-list-header">
-					<h2 data-i18n-key="serverListTitle">List of Servers:</h2>
-					<div class="dropdown-container">
-						<button class="dropdown-toggle" aria-expanded="false" aria-label="Supported sites">
-							<img
-								src="/icons/info.png"
-								alt="Expand list of sites"
-								class="dropdown-icon"
-							/>
-						</button>
-						<ul class="dropdown-menu">
-							<li class="dropdown-header" data-i18n-key="supportedSitesTitle">
-								Supported Sites:
-							</li>
-							<li class="dropdown-divider"></li>
-							<li><a href="https://server-discord.com" target="_blank">server-discord.com</a></li>
-							<li><a href="https://myserver.gg" target="_blank">myserver.gg</a></li>
-							<li><a href="https://disboard.org" target="_blank">disboard.org</a></li>
-							<li><a href="https://discordserver.info" target="_blank">discordserver.info</a></li>
-						</ul>
-					</div>
+			<main class="popup-main">
+				<label class="search-field" for="search-input">
+					<svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+					<input id="search-input" type="search" autocomplete="off" data-i18n-placeholder="searchPlaceholder" placeholder="Search servers" />
+				</label>
+
+				<div class="view-tabs" role="tablist" aria-label="Server views">
+					<button class="view-tab is-active" type="button" role="tab" aria-selected="true" data-view="recent" data-i18n-key="recent">Recent</button>
+					<button class="view-tab" type="button" role="tab" aria-selected="false" data-view="favorites" data-i18n-key="favorites">Favorites</button>
+					<button class="view-tab" type="button" role="tab" aria-selected="false" data-view="popular" data-i18n-key="mostVisited">Most visited</button>
 				</div>
 
-				<input
-					type="text"
-					id="search-input"
-					placeholder="Search for a server..."
-					data-i18n-key="searchPlaceholder"
-				/>
-
-				<ul id="server-list"></ul>
-
-				<div id="pagination" class="pagination">
-					<button id="prev-page" class="pagination-button" title="Previous page">&larr;</button>
-					<span id="page-info">Page 1 of 1</span>
-					<button id="next-page" class="pagination-button" title="Next page">&rarr;</button>
-				</div>
+				<section id="server-list" class="server-list" aria-live="polite" aria-busy="true">
+					<div class="skeleton-card"></div>
+					<div class="skeleton-card"></div>
+					<div class="skeleton-card"></div>
+				</section>
 			</main>
 
-			<footer>
-				<div class="contact-container">
-					<a href="mailto:26bfgo@gmail.com" class="contact-link">Contact me</a>
-					<span class="tooltip">
-						If you have suggestions or feature requests, email 26bfgo@gmail.com.
-					</span>
-				</div>
+			<footer class="popup-footer">
+				<button id="open-dashboard" class="primary-button primary-button--wide" type="button">
+					<span data-i18n-key="openDashboard">Open full dashboard</span>
+					<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+				</button>
 			</footer>
-
-			<input type="file" id="import-file-input" accept=".json" hidden />
 		</div>
 
-		<div id="settings-modal" class="modal">
-			<div class="modal__content">
-				<div class="modal__header">
-					<h2 class="modal__title" data-i18n-key="settingsTitle">Settings</h2>
-					<button id="close-modal" class="modal__close" title="Close">&times;</button>
-				</div>
-
-				<div class="modal__body">
-					<div class="modal-buttons">
-						<button id="export-button" class="modal__button modal__button--export" title="Export data">
-							<img src="/icons/export-icon.png" alt="Export" class="button-icon" />
-							<span data-i18n-key="export">Export</span>
-						</button>
-
-						<button id="import-button" class="modal__button modal__button--import" title="Import data">
-							<img src="/icons/import-icon.png" alt="Import" class="button-icon" />
-							<span data-i18n-key="import">Import</span>
-						</button>
-					</div>
-
-					<div class="reset-container">
-						<p class="reset-hint" data-i18n-key="resetHint">
-							Hold Ctrl while clicking the reset button to reset all counters.
-						</p>
-						<button
-							id="reset-button"
-							class="modal__button modal__button--reset"
-							title="Reset all counters"
-						>
-							<span class="reset-icon"></span>
-							<span data-i18n-key="reset">Reset</span>
-						</button>
-					</div>
-
-					<div class="language-selection">
-						<label for="language-select">
-							<img src="/icons/globe-icon.png" alt="Language" class="language-icon" />
-							<span data-i18n-key="chooseLanguage">Choose language:</span>
-						</label>
-						<select id="language-select">
-							<option value="ru">Русский</option>
-							<option value="en">English</option>
-						</select>
-					</div>
-
-					<div class="time-format-selection">
-						<label for="time-format-select">
-							<span data-i18n-key="timeFormat">Time format:</span>
-						</label>
-						<select id="time-format-select">
-							<option value="24" data-i18n-key="timeFormat24">24-hour</option>
-							<option value="12" data-i18n-key="timeFormat12">12-hour</option>
-						</select>
+		<dialog id="settings-dialog" class="dialog dialog--settings">
+			<form method="dialog" class="dialog__surface">
+				<header class="dialog__header">
+					<div><span class="eyebrow" data-i18n-key="preferences">Preferences</span><h2 data-i18n-key="settingsTitle">Settings</h2></div>
+					<button class="icon-button dialog-close" value="cancel" data-i18n-label="close" aria-label="Close">×</button>
+				</header>
+				<div class="dialog__body settings-grid">
+					<label><span data-i18n-key="language">Language</span><select id="language-select"><option value="en">English</option><option value="ru">Русский</option></select></label>
+					<label><span data-i18n-key="theme">Theme</span><select id="theme-select"><option value="system" data-i18n-key="themeSystem">System</option><option value="light" data-i18n-key="themeLight">Light</option><option value="dark" data-i18n-key="themeDark">Dark</option></select></label>
+					<label><span data-i18n-key="timeFormat">Time format</span><select id="time-format-select"><option value="24" data-i18n-key="timeFormat24">24-hour</option><option value="12" data-i18n-key="timeFormat12">12-hour</option></select></label>
+					<div class="settings-actions">
+						<button id="export-button" class="secondary-button" type="button" data-i18n-key="export">Export data</button>
+						<button id="import-button" class="secondary-button" type="button" data-i18n-key="import">Import data</button>
+						<button id="reset-button" class="danger-button" type="button" data-i18n-key="resetData">Reset tracked data</button>
 					</div>
 				</div>
-			</div>
-		</div>
+			</form>
+		</dialog>
 
+		<dialog id="note-dialog" class="dialog">
+			<form method="dialog" class="dialog__surface">
+				<header class="dialog__header"><div><span class="eyebrow" data-i18n-key="personalNote">Personal note</span><h2 id="note-server-name"></h2></div><button class="icon-button dialog-close" value="cancel" aria-label="Close">×</button></header>
+				<div class="dialog__body">
+					<label for="note-input" class="sr-only" data-i18n-key="personalNote">Personal note</label>
+					<textarea id="note-input" maxlength="500" rows="5" data-i18n-placeholder="notePlaceholder" placeholder="Add a short note…"></textarea>
+				</div>
+				<footer class="dialog__footer"><button class="secondary-button" value="cancel" data-i18n-key="cancel">Cancel</button><button id="save-note" class="primary-button" value="default" type="button" data-i18n-key="save">Save</button></footer>
+			</form>
+		</dialog>
+
+		<dialog id="confirm-dialog" class="dialog">
+			<form method="dialog" class="dialog__surface">
+				<header class="dialog__header"><div><span class="eyebrow" data-i18n-key="confirmation">Confirmation</span><h2 id="confirm-title"></h2></div><button class="icon-button dialog-close" value="cancel" aria-label="Close">×</button></header>
+				<div class="dialog__body"><p id="confirm-message" class="muted"></p></div>
+				<footer class="dialog__footer"><button class="secondary-button" value="cancel" data-i18n-key="cancel">Cancel</button><button id="confirm-action" class="danger-button" value="default" type="button" data-i18n-key="confirm">Confirm</button></footer>
+			</form>
+		</dialog>
+
+		<dialog id="import-dialog" class="dialog">
+			<form method="dialog" class="dialog__surface">
+				<header class="dialog__header"><div><span class="eyebrow" data-i18n-key="import">Import data</span><h2 data-i18n-key="chooseImportMode">Choose import mode</h2></div><button class="icon-button dialog-close" value="cancel" aria-label="Close">×</button></header>
+				<div class="dialog__body import-options">
+					<button id="import-merge" class="choice-button" type="button"><strong data-i18n-key="merge">Merge</strong><span data-i18n-key="mergeDescription">Keep current data and combine visit history.</span></button>
+					<button id="import-replace" class="choice-button choice-button--danger" type="button"><strong data-i18n-key="replace">Replace</strong><span data-i18n-key="replaceDescription">Replace tracked servers; keep preferences.</span></button>
+				</div>
+			</form>
+		</dialog>
+
+		<input id="import-file-input" type="file" accept="application/json,.json" hidden />
+		<div id="toast-region" class="toast-region" role="status" aria-live="polite"></div>
 		<script type="module" src="/src/popup/main.js"></script>
 	</body>
 </html>

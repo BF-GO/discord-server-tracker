@@ -227,12 +227,18 @@ if (!adapter) {
 		const nextCount = (Number(existingData?.count) || 0) + 1;
 
 		return {
+			...(existingData || {}),
 			count: nextCount,
 			name: adapter.getServerName(serverBlock) || existingData?.name || UNKNOWN_SERVER,
 			mainLink: adapter.getMainLink(serverBlock) || existingData?.mainLink || null,
 			joinLink: adapter.getJoinLink(serverBlock) || existingData?.joinLink || null,
 			history,
+			firstVisitedAt: existingData?.firstVisitedAt || now,
 			lastVisited: now,
+			favorite: existingData?.favorite === true,
+			archived: existingData?.archived === true,
+			note: typeof existingData?.note === 'string' ? existingData.note : '',
+			tags: Array.isArray(existingData?.tags) ? existingData.tags : [],
 		};
 	}
 
