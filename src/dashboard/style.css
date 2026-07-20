@@ -49,6 +49,7 @@
 .dashboard-empty { display: grid; min-height: 260px; place-items: center; padding: 30px; text-align: center; }
 .dashboard-empty h2 { font-size: 16px; }
 .dashboard-empty p { margin-top: 7px; color: var(--muted); font-size: 12px; }
+.dashboard-empty button { margin-top: 14px; }
 .list-footer { padding: 4px 20px 20px; text-align: center; }
 .history-dialog { width: min(500px, calc(100vw - 28px)); }
 .full-history { display: grid; gap: 6px; }

@@ -4,6 +4,13 @@
 
 Discord Server Tracker — это расширение браузера на Manifest V3, которое отслеживает клики по кнопкам входа в Discord-серверы на поддерживаемых сайтах-каталогах.
 
+## Поддерживаемые сайты
+
+- https://server-discord.com
+- https://myserver.gg
+- https://discordserver.info
+- https://disboard.org
+
 ## Что Обновлено
 
 - Проект переведен на сборку через Vite.
@@ -13,13 +20,6 @@ Discord Server Tracker — это расширение браузера на Man
 - `dashboard.html` содержит поиск, фильтры, статистику, заметки и управление архивом.
 - Старая локальная история мигрирует автоматически; импорт поддерживает объединение и замену.
 - Поддерживаются системная, светлая и тёмная темы.
-
-## Поддерживаемые Сайты
-
-- https://server-discord.com
-- https://myserver.gg
-- https://discordserver.info
-- https://disboard.org
 
 ## Разработка
 

@@ -175,6 +175,7 @@ function renderCard(server) {
 							${mainLink ? `<a href="${escapeHtml(mainLink)}" target="_blank" rel="noopener">${escapeHtml(t('openSource', 'Open source page'))}</a>` : ''}
 							<button type="button" data-action="history">${escapeHtml(t('showHistory', 'Show visit history'))}</button>
 							<button class="danger-action" type="button" data-action="archive">${escapeHtml(t('archive', 'Archive'))}</button>
+							<button class="danger-action" type="button" data-action="delete">${escapeHtml(t('deletePermanently', 'Delete permanently'))}</button>
 						</div>
 					</details>
 					${joinLink ? `<a class="mini-button" href="${escapeHtml(joinLink)}" target="_blank" rel="noopener" aria-label="${escapeHtml(t('join', 'Join'))}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg></a>` : ''}
@@ -209,9 +210,9 @@ function render() {
 	const isFirstRun = state.servers.length === 0;
 	elements.serverList.innerHTML = `
 		<div class="empty-state"><div><div class="empty-state__icon" aria-hidden="true">${isFirstRun ? '✦' : '⌕'}</div>
-		<h2>${escapeHtml(isFirstRun ? t('firstRunTitle', 'Your server history starts here') : t('emptyViewTitle', 'Nothing found'))}</h2>
-		<p>${escapeHtml(isFirstRun ? t('firstRunDescription', 'Visit a supported listing website and use a Join button. The server will appear here automatically.') : t('emptyViewDescription', 'Try another search or switch the current view.'))}</p>
-		${isFirstRun ? `<a href="https://disboard.org" target="_blank" rel="noopener">${escapeHtml(t('browseSupportedSite', 'Browse a supported site'))}</a>` : ''}
+		<h2>${escapeHtml(isFirstRun ? t('firstRunTitle', 'No tracked servers yet') : t('emptyViewTitle', 'Nothing found'))}</h2>
+		<p>${escapeHtml(isFirstRun ? t('firstRunDescription', 'Visit one of the supported listing websites and click a server join button. The server will appear here automatically.') : t('emptyViewDescription', 'Try another search or switch the current view.'))}</p>
+		${isFirstRun ? `<button class="secondary-button" type="button" data-action="show-tracking-info">${escapeHtml(t('viewSupportedWebsites', 'View supported websites'))}</button>` : ''}
 		</div></div>`;
 }
 
@@ -281,6 +282,21 @@ async function archiveServer(server) {
 	});
 }
 
+async function deleteServer(server) {
+	const confirmed = await requestConfirmation({
+		title: t('confirmDeleteTitle', 'Delete server permanently?'),
+		message: t('confirmDeleteMessage', 'This removes the server and all visit history. This action cannot be undone.'),
+		confirmLabel: t('deletePermanently', 'Delete permanently'),
+	});
+	if (!confirmed) return;
+
+	await removeStorage(server.key);
+	state.servers = state.servers.filter((entry) => entry.key !== server.key);
+	notifyStorageChanged();
+	render();
+	showToast(t('serverDeleted', 'Server permanently deleted.'));
+}
+
 function openNoteDialog(server) {
 	state.noteKey = server.key;
 	elements.noteServerName.textContent = server.name;
@@ -290,11 +306,17 @@ function openNoteDialog(server) {
 }
 
 async function handleListAction(event) {
+	const action = event.target.closest('[data-action]')?.dataset.action;
+	if (action === 'show-tracking-info') {
+		elements.settingsDialog.showModal();
+		document.getElementById('tracking-info')?.scrollIntoView({ block: 'nearest' });
+		return;
+	}
+
 	const card = event.target.closest('.server-card');
 	if (!card) return;
 	const server = state.servers.find((entry) => entry.key === card.dataset.key);
 	if (!server) return;
-	const action = event.target.closest('[data-action]')?.dataset.action;
 	if (action) {
 		event.preventDefault();
 		event.stopPropagation();
@@ -315,6 +337,7 @@ async function handleListAction(event) {
 			render();
 			break;
 		case 'archive': await archiveServer(server); break;
+		case 'delete': await deleteServer(server); break;
 		default:
 			if (event.target.closest('.server-card__main') && !event.target.closest('a, button, summary, details')) {
 				state.expandedKey = state.expandedKey === server.key ? null : server.key;

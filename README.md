@@ -4,6 +4,13 @@
 
 Discord Server Tracker is a Manifest V3 browser extension that tracks clicks on Discord server join buttons across supported server listing websites.
 
+## Supported Sites
+
+- https://server-discord.com
+- https://myserver.gg
+- https://discordserver.info
+- https://disboard.org
+
 ## What Changed
 
 - Project migrated to a Vite-based build pipeline.
@@ -13,13 +20,6 @@ Discord Server Tracker is a Manifest V3 browser extension that tracks clicks on 
 - `dashboard.html` provides full search, filtering, statistics, notes, and archive management.
 - Existing local history is migrated in place; import supports merge and replace modes.
 - System, light, and dark themes are supported.
-
-## Supported Sites
-
-- https://server-discord.com
-- https://myserver.gg
-- https://discordserver.info
-- https://disboard.org
 
 ## Development
 

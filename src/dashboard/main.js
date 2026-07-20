@@ -205,7 +205,12 @@ function renderList() {
 	elements.resultSummary.textContent = t('showingResults', 'Showing {shown} of {total}')
 		.replace('{shown}', String(visible.length)).replace('{total}', String(filtered.length));
 	if (!visible.length) {
-		elements.dashboardList.innerHTML = `<div class="dashboard-empty"><div><h2>${escapeHtml(t('noDashboardResults', 'No servers match these filters'))}</h2><p>${escapeHtml(t('noDashboardResultsDescription', 'Clear one or more filters to see your history.'))}</p></div></div>`;
+		const isFirstRun = state.servers.length === 0;
+		elements.dashboardList.innerHTML = `<div class="dashboard-empty"><div>
+			<h2>${escapeHtml(isFirstRun ? t('firstRunTitle', 'No tracked servers yet') : t('noDashboardResults', 'No servers match these filters'))}</h2>
+			<p>${escapeHtml(isFirstRun ? t('firstRunDescription', 'Visit one of the supported listing websites and click a server join button. The server will appear here automatically.') : t('noDashboardResultsDescription', 'Clear one or more filters to see your history.'))}</p>
+			${isFirstRun ? `<button class="secondary-button" type="button" data-action="show-tracking-info">${escapeHtml(t('viewSupportedWebsites', 'View supported websites'))}</button>` : ''}
+		</div></div>`;
 	} else {
 		elements.dashboardList.innerHTML = visible.map(renderRow).join('');
 	}
@@ -289,8 +294,14 @@ function requestConfirmation({ title, message, confirmLabel }) {
 }
 
 async function handleAction(event) {
-	const row = event.target.closest('.dashboard-row');
 	const action = event.target.closest('[data-action]')?.dataset.action;
+	if (action === 'show-tracking-info') {
+		elements.settingsDialog.showModal();
+		document.getElementById('tracking-info')?.scrollIntoView({ block: 'nearest' });
+		return;
+	}
+
+	const row = event.target.closest('.dashboard-row');
 	if (!row || !action) return;
 	const server = state.servers.find((entry) => entry.key === row.dataset.key);
 	if (!server) return;

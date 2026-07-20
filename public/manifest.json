@@ -1,7 +1,7 @@
 ﻿{
 	"manifest_version": 3,
 	"name": "Discord Server Tracker",
-	"version": "4.0.0",
+	"version": "4.0.2",
 	"description": "Track, search, favorite, annotate, and manage Discord servers from supported listing websites.",
 	"permissions": ["storage"],
 	"background": {
